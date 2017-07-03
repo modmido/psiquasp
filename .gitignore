@@ -1,0 +1,16 @@
+# Compiled source #
+###################
+*.o
+*.so
+*.a
+*.out
+
+# Example output #
+##################
+*.dat
+
+# Dokumentation #
+#################
+doc/html
+doc/latex
+doc/doxygen_sqlite3.db
