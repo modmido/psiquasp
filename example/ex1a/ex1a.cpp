@@ -209,7 +209,7 @@ int main(int argc, char **args)
     
     
     
-    //computing stage: use the Petsc stuff to solve the problem using explicit Runge-Kutta time integration
+    //computing stage: use the Petsc ODE utilities to solve the problem using explicit Runge-Kutta time integration
     TS		ts;							//time stepper
     TSAdapt	adapt;							//adaptive time step context
     
@@ -236,7 +236,7 @@ int main(int argc, char **args)
     //security measure
     TSSetTimeStep(ts,1); 						//for oscillatory stuff, otherwise it crashes, probably because initial time step too large
     
-    //solve it and write shit into the output at every step
+    //solve it and write into the output files at every 30th time step
     TSSolve(ts,dm);							//seems like initial conditions and solution/time steps get the same Vec, convenient...
 
 

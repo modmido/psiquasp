@@ -2,7 +2,7 @@
 /**
  * @file	gnfcts.hpp
  * 
- * 		Gnfct and Elem classes for correlation functions of arbitrary order.
+ * 		Gnfct class for correlation functions of arbitrary order.
  * 
  * @author	Michael Gegg
  * 
@@ -43,7 +43,7 @@ class Gnfct: public PropBase
     PetscErrorCode	SingleElementMLSNO(System * sys, PetscInt mlsdens, PetscInt leftpol, PetscInt rightpol, PetscInt lowerdens, std::list<Elem*> * result, std::stack<Elem*> * input);
     PetscErrorCode	MLSNormalorderedExpecationvalue(System * sys, PetscInt order, MLSDim destructor, PetscInt choose);
     
-    PetscErrorCode	CombineListElems(std::list<Elem*> * clean, std::list<Elem*> * raw);			//combine the raw output of the recursive SingleElementMLSNE
+    PetscErrorCode	CombineListElems(std::list<Elem*> * clean, std::list<Elem*> * raw);		//combine the raw output of the recursive SingleElementMLSNE
     PetscErrorCode	ComputeIndex(System * sys, std::list<Elem*> * clean);				//compute the dmindex of each element in the list
     
     
@@ -56,7 +56,7 @@ class Gnfct: public PropBase
     
     PetscErrorCode	Compute(Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);		//compute the expecation value
     PetscErrorCode	ComputeAll(Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);		//compute the expecation value
-    PetscErrorCode	SetupModeGnfct(System * sys,PetscInt modenumber,PetscInt order);			//setup bosonic gnfct of mode mode and of order order 
+    PetscErrorCode	SetupModeGnfct(System * sys,PetscInt modenumber,PetscInt order);		//setup bosonic gnfct of mode mode and of order order 
     PetscErrorCode	SetupMLSGnfct(System * sys,MLSDim destructor,PetscInt inorder);			//setup excitonic gnfct of mlsdens dof and of order order
     
 };

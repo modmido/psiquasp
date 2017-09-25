@@ -206,7 +206,7 @@ PetscErrorCode Gnfct::ComputeAll(Vec dm, PetscReal time, PetscScalar* ret, Petsc
  * @brief	Setup of the nth order correlation function of one of the bosonic modes.
  * 
  * @param	sys		the system specification object.
- * @param	modenumber	the name of the mode, first dimension, i.e. m0, m1, etc.
+ * @param	modenumber	the number of the mode, starting from zero in the order in which they were set
  * @param	inorder		the order of the correlation function.
  * 
  */

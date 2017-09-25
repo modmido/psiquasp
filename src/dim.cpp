@@ -69,6 +69,11 @@ MLSDim::MLSDim(PetscInt left, PetscInt right)
 }
 
 
+/**
+ * @brief	Swap "constructor". Creates a name object that has swapped ket and bra values.
+ * 
+ */
+
 MLSDim MLSDim::Swap(MLSDim swap)
 {
     MLSDim	ret (swap.bra,swap.ket);

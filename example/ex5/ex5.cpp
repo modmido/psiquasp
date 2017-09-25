@@ -965,7 +965,7 @@ int main(int argc, char **args)
     //security measure
     ierr = TSSetTimeStep(ts,2.);CHKERRQ(ierr);						//for oscillatory stuff, otherwise it crashes, probably because initial time step too large
     
-    //solve it and write shit into the output at every step
+    //solve it and write into the output files at every 30th time step
     ierr = TSSolve(ts,dm);CHKERRQ(ierr);						//seems like initial conditions and solution/time steps get the same Vec, convenient...
 
 

@@ -206,7 +206,7 @@ PetscErrorCode System::AddLastRowTrace(Mat AA, PetscInt * d_nnz, PetscInt * o_nn
 #define __FUNCT__ "AddModeH0"
 
 /**
- * @brief	Adds the H0 contribution of a bosonic mode in the quantum master equation to the matrix. The function sets/adds the Liouvillian matrix \f$ \mathcal{L} \f$ corresponding to \f$ \mathcal{L}\rho \rightarrow  + i \omega [\rho, b^\dagger b] \f$.
+ * @brief	Adds the H0 contribution of a bosonic mode in the quantum master equation to the matrix. The function sets/adds the Liouvillian matrix \f$ \mathcal{L} \f$ corresponding to \f$ \mathcal{L}\rho =  + i \omega [\rho, b^\dagger b] \f$.
  * 
  * @param	AA		the matrix.
  * @param	d_nnz		the array counting the number of local elements belonging to the diagonal block per row.
@@ -278,7 +278,7 @@ PetscErrorCode	System::AddModeH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, Pet
 #define __FUNCT__ "AddMLSH0"
 
 /**
- * @brief	Adds a single MLS H0 contribution to the matrix. The function sets/adds parts of the Liouvillian matrix \f$ \mathcal{L} \f$ corresponding to \f$ \mathcal{L}\rho \rightarrow  + i \omega [\rho,J_{xx}] \f$.
+ * @brief	Adds a single MLS H0 contribution to the matrix. The function sets/adds parts of the Liouvillian matrix \f$ \mathcal{L} \f$ corresponding to \f$ \mathcal{L}\rho =  + i \omega [\rho,J_{xx}] \f$.
  * 
  * 		pol refers to the polarization MLSDim which is relevant for the snippet of the H0 contribution: if e.g. H0 = hbar omega J_11, then pol may be any polarization starting with 1 i.e. n10, n12, n13 etc.
  * 		the matrix elements then are given by couplingconst*(n1i - ni1) or generally for J_{xx} -> couplingconst*(nxy - nyx).

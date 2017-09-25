@@ -43,7 +43,7 @@ OFile::~OFile()
 #define __FUNCT__ "SetOFile"
 
 /**
- * @brief	Open the file in Petsc style using the right PETSC_COMM_WORLDunicator for parallel output.
+ * @brief	Open the file in Petsc style using the PETSC_COMM_WORLD MPI communicator for parallel output.
  * 
  * @param	sys		pointer to the user specified System (polymorphic).
  * @param	filename	name of the file.
@@ -67,7 +67,7 @@ PetscErrorCode OFile::SetOFile(System* sys, std::string filename)
 #define __FUNCT__ "AddElem"
 
 /**
- * @brief	Add Element to OFile.
+ * @brief	Add Element to OFile. Element here means a child of PropBase
  * 
  * @param	elem		pointer to the element (observable, distribution, gnfct,...) to be added (polymorphic).
  * @param	name		name of the element (obs, dist, etc. )
@@ -200,7 +200,7 @@ PetscErrorCode OFile::WriteSystemParameters(System * sys)
 #define __FUNCT__ "MakeHeaderTEV"
 
 /**
- * @brief	Makes a header line explaining the output. Prints #time and the names list
+ * @brief	Makes a header line explaining the output. Prints #time first and then the names list
  * 
  */
 
@@ -226,7 +226,7 @@ PetscErrorCode	PropFile::MakeHeaderTEV()
 #define __FUNCT__ "MakeHeaderGen"
 
 /**
- * @brief	Makes a header line explaining the output. Prints #var and the names list.
+ * @brief	Makes a header line explaining the output. Prints #var and then the names list.
  * 
  * @param	var	the name of the parameter to be varied in the output file
  * 

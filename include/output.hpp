@@ -38,7 +38,7 @@ class PropBase
     std::string	name;					//!< name of the quantity
     PetscInt	isherm;					//!< isherm: 0 if it should not be real valued, 1 if it should
     PetscInt	alloc;					//!< alloc: 0 if its not allocated yet, 1 if yes
-    PetscReal	real_value_tolerance;
+    PetscReal	real_value_tolerance;			//!< cutoff value for the maximum value of an imaginary part of an hermitian observable. is checked when output is printed
     
   public:
     PropBase()	{ real_value_tolerance = 1.e-10; name = "noname"; }
@@ -64,7 +64,7 @@ class PropBase
 
 
 /**
- * @brief	Abstract base class for output files. There is one object per output file.
+ * @brief	Abstract base class for output files. The idea is to create a single object per output file which then can be used with obj.PrintLine() in order to create output
  * 
  */
 
@@ -144,7 +144,7 @@ class DistFile: public OFile
 
 /**
  * @brief	Base class for the whole program output, needs to be specified for the specific usage.
- * 		Contains the files list which contains all output file ojects and two methods AddOFile which adds a file to the list and GenMonitor which prints a single line to all the output files.
+ * 		Contains the files list which contains all output file ojbects and two methods AddOFile which adds a file to the list and GenMonitor which prints a single line to all the output files.
  * 
  */
 

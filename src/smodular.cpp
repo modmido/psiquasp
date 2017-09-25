@@ -2,7 +2,7 @@
 /**
  * @file	smodular.cpp
  * 
- * 		Definition of the System class methods for the modular Lindbladian setup routines
+ * 		Definition of the System class methods for the modular Liouvillian setup routines
  * 		This allows to setup a vast number of user defined master equations.
  * 
  * @author	Michael Gegg

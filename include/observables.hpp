@@ -32,7 +32,7 @@ class Observable: public PropBase
     PetscInt		freqcomponents;						//!< the number of different frequency components, arises from the rotating frame back transformation time dynamics
     PetscInt		*lengths;						//!< the lengths of the local arrays
     PetscInt		**dmindex;						//!< the indices of the relevant local dm entries
-    PetscReal		*domega;						//!< phase velocities of the rotating frame backtransformation
+    PetscReal		*domega;						//!< phase velocities of the rotating frame backtransformation, one per frequency component
     PetscReal		**prefactor;						//!< the prefactors that have to be multiplied with the respective entries
     
     
@@ -80,7 +80,8 @@ class Observable: public PropBase
  * @brief	Class for all custom made modular system properties like observables, correlation functions<br>
  * 
  * 		This class does not support possible phase factors arising from a rotating frame backtransformation.
- * 		In order to allow for such rotating frame backtransformation phase factors the user would need the separate the operators according to the different phase velocites and use the VecContractXXX() functionalities to interface it
+ * 		In order to allow for such rotating frame backtransformation phase factors the user would need the separate the operators according to the different phase velocites and use the System::VecContractXXX() functionalities to transform the linear
+ *		functional vectors for the different frequency components of the observable into the array format of the standard Observable class (see above).
  * 		to the normal Observables class.
  * 
  */
@@ -89,8 +90,8 @@ class PModular: public PropBase
 {
   protected:
     Vec		left;							//!< the trace vector times the O_left matrix, where O ist the quantity whose expect. value shall be computed i.e. < tr | O_left
-    PetscScalar	omega;
-    PetscReal	shift;
+    PetscScalar	omega;							//!< possible rotating frame angular frequency
+    PetscReal	shift;							//!< possible shift, like in Tr(\rho)-1
     
     PetscErrorCode	GenerateLeft(System * sys, Mat AA);		//!< computes < tr | AA and stores it in left, also creates left
     PetscErrorCode	LeftOverwrite(System * sys, Mat AA);		//!< overwrites and existing left vector

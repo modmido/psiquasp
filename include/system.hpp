@@ -18,7 +18,7 @@
  * The PsiQuaSP library provides all functionality that is needed to quickly set up a simulation for the permutation symmetric many multi-level system (MLS) method into code. The method is introduced in the three publications<br>
  * [1] [M. Richter, M. Gegg, TS. Theuerholz and A. Knorr, Phys. Rev. B 91, 035306 (2015)] (https://journals.aps.org/prb/abstract/10.1103/PhysRevB.91.035306)<br>
  * [2] [M. Gegg, M. Richter: New J. Phys. 18, 043037 (2016)] (http://iopscience.iop.org/article/10.1088/1367-2630/18/4/043037)<br>
- * [3] [M. Gegg, M. Richter: arXiv (2017)] () <br>
+ * [3] [M. Gegg, M. Richter: arXiv 1707.01079 (2017)] (https://arxiv.org/abs/1707.01079) <br>
  * The last publication serves as a short manual for this library. All occuring equations are solved using the PETSc and SLEPc packages, https://www.mcs.anl.gov/petsc/ and http://slepc.upv.es/ <br>
  * PsiQuaSP solely provides the functionality for setting up the master equation and the program output. Some understanding of PETSc and the permutationally symmetric methodology is required, but one can start working on the example 
  * codes and learn these things along the way. <br>
@@ -70,28 +70,6 @@
  * For using multiple processors the PETSc MPI script must be used. Without using this script the program will operate in uniprocessor mode. <br>
  * PETSc provides interfaces to different partitioning packages such as METIS/PARMETIS or SCOTCH, which can be used to increase parallel performance.
  *
- * @section	five Todo:
- *
- *  - make more modular code examples
- *  - maybe make unittests
- *  - maybe make first mls dimension truncation functionality?
- *  - index does not support different types of mls so far, change that 
- *  - make clean functionality, there is some weird error when I inlcude that, get rid of that error 
- *  - make set tabdivider and make only one tab separator in the header, so that the output files can easily be loaded to e.g. excel
- *  - finish ex5 parmetis example
- *  - make DmWriteState(...,qnumbers,value) to write user defined distributions into the thing
- *  - maybe some encapsulation for the downprojection stuff
- * 
- *  - make a proper index documentation
- *  - do some tidy up work and update the doxygen commenting
- *  - make the whole is dim == -1 checks internal in the index class, that makes the system routines much nicer and more accessible, already started to do that in some index routines like MLSQN()
- *
- *  - could use the VecContractReal functon to interface the modular observables to the old internal data structure, maybe there is a performance boost, however, if that is the issue then the design of the program is probably not good/there is too much output.
- *  - looks like all implemented observables use only one frequency component... I could remove the array things, or I could include the functions that have more freq components into the rotating frame version, but I would have to test that
- *  - use the VecContractReal as an interface to the old observables stuff and then make an example somewhere how to implement an observable with a complicated time dependency
- *  - think thouroughly about unitary time dependencies of currents, observables in steady state and time evolution and in rotating frame and without and make output accordingly
- *  - maybe make runtime tests of modular properties setup/computation vs old routines. I implemented the old stuff in a waz that i thought was most efficient but i actually never tested it, maybe the petsc < vec|vec > scalar product is faster than my own routines?
- *
  *
  * @section	six Example codes
  *
@@ -107,19 +85,14 @@
  *  + 2b) two-level laser, same as in 2a but using the SLEPc krylov-schur algorithm for direct steady state computation
  *  + 2c) two-level laser -- strong coupling using nonrwa
  *
- *  + 3a) Lambda system master equation introduced in Ref ... -- general multi-level system usage
- *  + 3b) Three-level laser from Ref. ... -- another multi-level system setup with reduced scaling
+ *  + 3a) Lambda system master equation introduced in Ref [3] -- general multi-level system usage
+ *  + 3b) Three-level laser from Ref. [2] -- another multi-level system setup with reduced scaling
  *
  *  + 4a) Phononlaser/Supercooling master equation: two-level systems coupled to a phonon mode with external optical driving
  *        This example explains how to build arbitrary master equations using the elementary arrows
- *  - 4b) some other modular code
  *
  *  + 5) Same master equation as in 3a but using the graph partitioning package ParMetis to find further symmetries
  *       that lead to a further reduction in degrees of freedom, approximately from N^8 to N^7
- *
- *  - 6) disordered jc arrays -- modelindbladcoupling, maybe parmetis based reduction of degrees of freedom
- *
- *  - 7) disordered chiral spins
  *
  */
 

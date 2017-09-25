@@ -24,12 +24,24 @@ PsiQuaSP quantum master equations are complex valued equations so the PETSc inst
 
 `./configure --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --download-mpich --with-clanguage=c --with-scalar-type=complex --with-precision=double --download-fblaslapack`
 
-and then follow the instructions. The `PETSC_ARCH` variable allows to have multiple PETSc bulids simultaneously, which is highly recommended. For instance there is a debug and a no-debug version of PETSc. 
+and then follow the instructions. The `PETSC_ARCH` variable allows to have multiple PETSc builds simultaneously, which is highly recommended. For instance there is a debug and a no-debug version of PETSc. 
 The debug version allows the use of debuggers such as `gdb` however once the application code is stable the user should use the optimized PETSc build in order to get good performance. This is done by setting the `--with-debugging=0` 
 flag in the PETSc configuration. So the user should have at least two PETSc builds one with and one without debugging. PARMETIS and other external packages are installed by setting the corresponding flag in the PETSc installation.
 PsiQuaSP is tested for PETSc version 3.7.6
 
-Sometimes double precision is not sufficient or rather the occuring equations may be "ill conditioned" and preconditioning is something that needs a lot of expertise. Thus in order to get converged results it may be necessary to use quadruple precision, which is achieved by using the `--with-precision=__float128` flag - this is only possible with C and not C++, thus the use of `--with-clanguage=c` is mandatory. However so far this feature is not a standard PETSc feature (at least when calling PETSc from a c++ code). Therefore there is a patch in the `patch` folder. This requires git, thus you should clone PETSc from https://bitbucket.org/petsc/petsc with the command 
+The installation procedure presented here is recommended for people starting to use PsiQuaSP and/or PETSc. They are not mandatory (except for the use of complex numbers) and the advanced user may want to change some aspects in the installation. 
+
+#### Additional remarks
+
+There is also the possibility to install PETSc without MPI using the `--with-mpi=0` flag in the installation. This of course limits the use of PsiQuaSP to uniprocessor operation only. Another psooibility is the use of a different MPI implementation, for this case please refer to the PETSc installation instructions for details. 
+
+The use of the `--download-fblaslapack` is also not mandatory, the user can for instance use the BLAS/LAPACK installation of your distribution/operating system or Intel MKL. Please refer to the PETSc installation instructions for details. We also recommend to talk to the administrator of your cluster for using the most efficient solution.
+
+Also if BLAS/LAPACK and/or MPI are already installed on your machine you may skip the `--download-...` commands, but you might have to specify the location of the respective installations. Please refer to the PETSc installation instructions for details.
+
+#### Extended precision
+
+Sometimes double precision is not sufficient or rather the occuring equations may be "ill conditioned" and preconditioning is something that needs a lot of expertise. Thus in order to get converged results it may be necessary to use quadruple precision, which is achieved by using the `--with-precision=__float128` flag - this is only possible with C and not C++, thus the use of `--with-clanguage=c` is mandatory. However so far this feature is not a standard PETSc feature (at least when calling PETSc from a C++ code). Therefore there is a patch in the `patch` folder. This requires git, thus you should clone PETSc from https://bitbucket.org/petsc/petsc with the command 
 
 `git clone https://bitbucket.org/petsc/petsc.git`
 
@@ -45,7 +57,7 @@ in the PETSc folder and then configure PETSc e.g. with the options
 
 `./configure --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --download-mpich --with-clanguage=c --with-scalar-type=complex --with-precision=__float128 --download-f2cblaslapack`
 
-The SLEPc installation remains the same. This is tested for PETSc 3.7.6 and SLEPc 3.7.3. Maybe in the future this functionality will be included in the standard PETSc release and this step will become needless. 
+The SLEPc installation remains the same. This is tested for PETSc 3.7.6 and SLEPc 3.7.3. In the future this functionality will be included in the standard PETSc release (3.8 release) and this step will become obsolete. 
 
 
 ### Installing SLEPc

@@ -350,7 +350,7 @@ int main(int argc, char **args)
     ierr = TSSetTimeStep(ts,0.01);CHKERRQ(ierr);					//for oscillatory stuff, otherwise it crashes, because initial time step may be too large
     
     
-    //solve it and write into the output at every step
+    //solve it and write into the output
     ierr = TSSolve(ts,dm);CHKERRQ(ierr);						//actual solution
 
 

@@ -29,7 +29,7 @@
  *
  * @param	ntls		the number of two-level systems
  * @param	n10cutoff	the cutoff value for the n10 offidagonals
- * @param	n01cutoff	the cutoff value for the n01 offdiagonals, usually these two parameters should be the same!
+ * @param	n01cutoff	the cutoff value for the n01 offdiagonals, usually these two parameters should be the same since they have the same physical meaning
  * @param	energy		the energy gap between the ground and exited state
  *
  */
@@ -534,7 +534,7 @@ PetscErrorCode TLS::MatTLSCoherentDriveLeft(Mat *AA, PetscScalar matrixelem)
 
 /**
  * @brief	Creates a matrix corresponding to applying a tls raising operator on both sides of a Liouville space projector, needed for the successive creation of Dicke state projectors. <br>
- * 		Please note the subtle difference between raising the Liovuville space projector and applying raising lowering operators to the density matrix: \f$ J_{10} \hat{\mathcal{P}}[n11,n10,n01] J_{01} \leftrightarrow J_{01} \rho J_{10} \f$.
+ * 		Please note the difference between raising the Liovuville space projector and applying raising lowering operators to the density matrix: \f$ J_{10} \hat{\mathcal{P}}[n11,n10,n01] J_{01} \leftrightarrow J_{01} \rho J_{10} \f$.
  *
  * @param	AA	the Liouvillan matrix.
  *

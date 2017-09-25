@@ -2,7 +2,7 @@
 /**
  * @file	twolevelsystems.hpp
  * 
- * 		Specification class of System. This class simplifies the usage of the System utilities since they can be grouped together to provide premade setup functions for typical Liouvillians and distributions and observables.
+ * 		Specification class of System. This class simplifies the usage of the System class utilities since for two-level systems they can be grouped together to provide premade setup functions for typical Liouvillians, distributions and observables.
  * 
  * @author	Michael Gegg
  * 
@@ -58,7 +58,7 @@ class TLS: public System
 class DickeDistribution: public DModular
 {
   protected:
-    PetscErrorCode	JBlockShift(TLS * sys, PetscInt step, Vec elem);	//create root of the next pseudospin subspace
+    PetscErrorCode	JBlockShift(TLS * sys, PetscInt step, Vec elem);	//create a single projector in the next pseudospin subspace
     
   public:
     PetscErrorCode	SetupDickeDist(TLS * sys);
