@@ -208,7 +208,8 @@ PetscErrorCode Distribution::SetupModeDistribution(System * sys,PetscInt modenum
     
     //how many local dm entries?
     PetscInt		locindex;
-    PetscInt		templengths[sys->index->MaxQN(dim)+1] = {};			//number of local entries per number state    
+    PetscInt		*templengths = new PetscInt [sys->index->MaxQN(dim)+1];			//number of local entries per number state
+    memset(templengths,0,(sys->index->MaxQN(dim)+1)*sizeof(PetscInt));
     locindex		= sys->index->InitializeLocal();
       
     while ( sys->index->ContinueLocal() )						//loop over all local rows
@@ -226,7 +227,9 @@ PetscErrorCode Distribution::SetupModeDistribution(System * sys,PetscInt modenum
     
     
     //fill it with values
-    PetscInt		loccount[sys->index->MaxQN(dim)+1] = {};			//index for the individual number states
+    PetscInt		*loccount = new PetscInt [sys->index->MaxQN(dim)+1];			//index for the individual number states
+    memset(loccount,0,(sys->index->MaxQN(dim)+1)*sizeof(PetscInt));
+    
     locindex		= sys->index->InitializeLocal();
       
     while ( sys->index->ContinueLocal() )						//loop over all local rows
@@ -282,7 +285,8 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim mls
     
     //how many local dm entries?
     PetscInt		locindex;
-    PetscInt		templengths[sys->index->MaxQN(dim)+1] = {};			//number of local entries per number state, no truncation so far!!!!!!!
+    PetscInt		*templengths = new PetscInt [sys->index->MaxQN(dim)+1];			//number of local entries per number state, no truncation so far!!!!!!!
+    memset(templengths,0,(sys->index->MaxQN(dim)+1)*sizeof(PetscInt));
     locindex		= sys->index->InitializeLocal();
     
     while ( sys->index->ContinueLocal() )						//loop over all local rows
@@ -300,7 +304,8 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim mls
     
     
     //set it up
-    PetscInt		loccount[sys->index->MaxQN(dim)+1] = {};				//index for the individual number states, no truncation so far!!!
+    PetscInt		*loccount = new PetscInt [sys->index->MaxQN(dim)+1];				//index for the individual number states, no truncation so far!!!
+    memset(loccount,0,(sys->index->MaxQN(dim)+1)*sizeof(PetscInt));
     locindex		= sys->index->InitializeLocal();
      
     while ( sys->index->ContinueLocal() )							//loop over all local rows
@@ -371,7 +376,8 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim mls
     }
     else
     {
-      PetscInt		templengths[max] = {};					//number of local entries per number state, smells like segfault :-(
+      PetscInt		*templengths = new PetscInt [max];					//number of local entries per number state, smells like segfault :-(
+      memset(templengths,0,max*sizeof(PetscInt));
       locindex		= sys->index->InitializeLocal();
     
       while ( sys->index->ContinueLocal() )										//loop over all local rows
@@ -389,7 +395,8 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim mls
       
       
       //set it up
-      PetscInt		loccount[max] = {};					//index for the individual number states, no truncation so far!!!  
+      PetscInt		*loccount = new PetscInt [max];					//index for the individual number states, no truncation so far!!!
+      memset(loccount,0,max*sizeof(PetscInt));
       locindex		= sys->index->InitializeLocal();
     
       while ( sys->index->ContinueLocal() )								//loop over all local rows
