@@ -37,6 +37,8 @@ void OTC::Setup(Vec* dm, Mat* AA)
     //setup internal structure like the index and parallel layout and create vector for density matrix and matrix for Liouvillian
     PQSPSetup(dm,1,AA);
     
+    index->PrintElements();
+    index->PrintIndices();
     
     //write start values into the density matrix
     PetscInt	qnumbers [5] = {1,0,0,0,0};

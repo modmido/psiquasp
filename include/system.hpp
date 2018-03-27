@@ -113,7 +113,7 @@
 
 #define MIN(a,b)	(((a)<(b))?(a):(b))			//!< minimum macro
 #define MAX(a,b)	(((a)>(b))?(a):(b))			//!< maximum macro
-#define MAX_PARAM	50					//!< maximum number of parameters that can be stored internally
+#define MAX_PARAM	50				    	//!< maximum number of parameters that can be stored internally
 
 class Index;
 class Dim;
