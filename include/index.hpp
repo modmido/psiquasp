@@ -51,6 +51,7 @@ protected:
     PetscInt	isend;				//!< are we at the end of all superblocks?
     PetscInt	num_dims;			//!< the number of different dimensions
     PetscInt	firstmodedim;			//!< the index of the first mode dimension in the arrays above
+    PetscInt    multiMLS;           //!< the number of different mls minus 1
     
     PetscInt	num_levels;			//!< the number of levels per mls
     PetscInt	mls_dof;			//!< the mls total degrees of freedom
@@ -71,7 +72,8 @@ protected:
     //some helper functions
     PetscInt		BinomDim(PetscInt n, PetscInt order);		//Computes the recurring dimensionality binomial coefficient
     PetscInt		SetBlockZeros(PetscInt * dimlenghts);		//sets the blocksizes[0] entries to zero according to the dimlenghts specification array
-    inline void		IncrementInternal();
+    inline void		IncrementInternal();                        //!< increases the internal counters for the case of one type of mls
+    inline void     IncrementInternalMultiMLS();                //!< increases the internal counters for the case of more than one type of mls
     
 public:
   
@@ -403,7 +405,8 @@ inline PetscInt Index::Increment()
     mlsindex++;					//seems quite simple
     if( mlsindex == mls_dof )	mlsindex = 0;	//
     
-    IncrementInternal();
+    if(!multiMLS)   IncrementInternal();
+    else            IncrementInternalMultiMLS();
     
     return dmindex;
 }
@@ -424,47 +427,47 @@ inline void Index::IncrementInternal()
     {
       if( i < firstmodedim-1 )			//increment mls dim values
       {
-	indices[i] = 0;
-	indices[i+1]++;
-	blockindices[i]++;
-	i++;
+          indices[i] = 0;
+          indices[i+1]++;
+          blockindices[i]++;
+          i++;
       }
       else if ( firstmodedim != num_dims )	//there is at least one mode
       {
-	if ( i == firstmodedim-1 )		//transition between mls dims and mode dims
-	{
-	  for(j=0; j < firstmodedim; j++)	blockindices[j] = 0;
-	  indices[i] = 0;
-	  i++;
-	  indices[i]++;
-	}
-	else if( i < num_dims-1 ) 
-	{
-	  if( !((i-firstmodedim)%2) )		//multiple of 2, means first mode dim
-	  {
-	    indices[i] = 0;
-	    indices[i+1]++;
-	    blockindices[i]++;
-	    i++;	  
-	  }
-	  else					//not a multiple of 2, means second mode dim
-	  {
-	    indices[i] = 0;
-	    indices[i+1]++;
-	    blockindices[i-1] = 0;
-	    i++;
-	  }
-	}
-	else					//the end of the line
-	{
-	  isend = 1;
-	  break;
-	}
+          if ( i == firstmodedim-1 )		//transition between mls dims and mode dims
+          {
+              for(j=0; j < firstmodedim; j++)	blockindices[j] = 0;
+              indices[i] = 0;
+              i++;
+              indices[i]++;
+          }
+          else if( i < num_dims-1 )
+          {
+              if( !((i-firstmodedim)%2) )		//multiple of 2, means first mode dim
+              {
+                  indices[i] = 0;
+                  indices[i+1]++;
+                  blockindices[i]++;
+                  i++;
+              }
+              else					//not a multiple of 2, means second mode dim
+              {
+                  indices[i] = 0;
+                  indices[i+1]++;
+                  blockindices[i-1] = 0;
+                  i++;
+              }
+          }
+          else					//the end of the line
+          {
+              isend = 1;
+              break;
+          }
       }
       else					//the end of the line
       {
-	isend = 1;
-	break;
+          isend = 1;
+          break;
       }
     }
     if( !isend ) if( !blocksizes[0][blockindices[0]] ) IncrementInternal();	//if the current block in dim 0 has blocksize zero, do it again, because there is no allowed entry here, due to truncation

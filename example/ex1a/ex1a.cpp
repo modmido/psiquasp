@@ -37,6 +37,8 @@ void OTC::Setup(Vec* dm, Mat* AA)
     //setup internal structure like the index and parallel layout and create vector for density matrix and matrix for Liouvillian
     PQSPSetup(dm,1,AA);
     
+    index->PrintIndices();
+    index->PrintElements();
     
     //write start values into the density matrix
     PetscInt	qnumbers [5] = {1,0,0,0,0};
@@ -208,7 +210,7 @@ int main(int argc, char **args)
     
     
     
-    
+    /*
     //computing stage: use the Petsc ODE utilities to solve the problem using explicit Runge-Kutta time integration
     TS		ts;							//time stepper
     TSAdapt	adapt;							//adaptive time step context
@@ -238,13 +240,13 @@ int main(int argc, char **args)
     
     //solve it and write into the output files at every 30th time step
     TSSolve(ts,dm);							//seems like initial conditions and solution/time steps get the same Vec, convenient...
-
+*/
 
     
     //clean up stage: free everything that is not needed anymore
     MatDestroy(&AA); 
     VecDestroy(&dm); 
-    TSDestroy(&ts); 
+    //TSDestroy(&ts);
     delete out;
     
     PetscFinalize(); 
