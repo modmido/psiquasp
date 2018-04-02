@@ -2,8 +2,8 @@
 /**
  * @file	index.hpp
  * 
- * 		Definintion of the Index class. PsiQuaSP declares the density matrix in a vectorized form. The index keeps track of which element in the vector corresponds to which physical element.
- * 		The loop functionality of the class is declared as inline functions for (hopefully) better performance, therefore these functions are also included here.
+ * 		Definintion of the Index class. PsiQuaSP declares the density matrix in a vectorized form. The index keeps track of which element in the vector corresponds to which set of quantum numbers.
+ * 		The loop functionality of the class is declared as inline functions for (hopefully) better performance, therefore these functions are also included here in the header.
  * 
  * @author	Michael Gegg
  * 
@@ -40,18 +40,20 @@ class Index
 protected:
   
     //parameters
-    PetscInt	**blocksizes;			//!< the sizes of all superblocks of the different dimensionsIncrementInternal
+    PetscInt	**blocksizes;			//!< the sizes of all superblocks of the different dimensions
     PetscInt	*blocksizes_max;		//!< the number of different superblocks for each dimension, i.e. the lengths of the blocksizes[i] arrays
     PetscInt	*blockindices;			//!< the indices referring to the blocksizes arrays
-    PetscInt	*indices;			//!< the normal indices referring to the dimensions
+    PetscInt	*indices;			    //!< the normal indices referring to the dimensions
     PetscInt	*mlsdim_maxvalues;		//!< the maximum value each mls dimension can have, important for mls offdiag truncation
     PetscInt	*mlsdim_pol;			//!< 0 for a density like mls dimension, 1 for a polarization
-    PetscInt	dmindex;			//!< the combinded running index, i.e. the index in the dm vector, starting with zero at the global beginning of the vector!
-    PetscInt	mlsindex;			//!< the running index of the current mls subblock, repeats for every mode dof... 
-    PetscInt	isend;				//!< are we at the end of all superblocks?
-    PetscInt	num_dims;			//!< the number of different dimensions
+    PetscInt	dmindex;			    //!< the combinded running index, i.e. the index in the dm vector, starting with zero at the global beginning of the vector!
+    PetscInt	mlsindex;			    //!< the running index of the current mls subblock, repeats for every mode dof...
+    PetscInt	isend;				    //!< are we at the end of all superblocks?
+    PetscInt	num_dims;			    //!< the number of different dimensions
     PetscInt	firstmodedim;			//!< the index of the first mode dimension in the arrays above
-    PetscInt    multiMLS;           //!< the number of different mls minus 1
+    
+    PetscInt    multiMLS;               //!< the number of different mls minus 1
+    PetscInt    *multiMLS_start;        //!< the index of the frist dimension of the mls kind in the indices array
     
     PetscInt	num_levels;			//!< the number of levels per mls
     PetscInt	mls_dof;			//!< the mls total degrees of freedom
@@ -471,6 +473,69 @@ inline void Index::IncrementInternal()
       }
     }
     if( !isend ) if( !blocksizes[0][blockindices[0]] ) IncrementInternal();	//if the current block in dim 0 has blocksize zero, do it again, because there is no allowed entry here, due to truncation
+}
+
+
+/**
+ * @brief    Increments the internal arrays indices and blockindices to the next allowed value. Becomes recursive in case of mls offdiagonal truncation.
+ *
+ */
+
+inline void Index::IncrementInternalMultiMLS()
+{
+    PetscInt    i,j,k;
+    
+    indices[0]++;
+    i = 0;
+    k = 0;
+    while( indices[i] >= blocksizes[i][blockindices[i]] )
+    {
+        if( i < firstmodedim-1 )            //increment mls dim values
+        {
+            indices[i] = 0;
+            indices[i+1]++;
+            blockindices[i]++;
+            i++;
+        }
+        else if ( firstmodedim != num_dims )    //there is at least one mode
+        {
+            if ( i == firstmodedim-1 )        //transition between mls dims and mode dims
+            {
+                for(j=0; j < firstmodedim; j++)    blockindices[j] = 0;
+                indices[i] = 0;
+                i++;
+                indices[i]++;
+            }
+            else if( i < num_dims-1 )
+            {
+                if( !((i-firstmodedim)%2) )        //multiple of 2, means first mode dim
+                {
+                    indices[i] = 0;
+                    indices[i+1]++;
+                    blockindices[i]++;
+                    i++;
+                }
+                else                    //not a multiple of 2, means second mode dim
+                {
+                    indices[i] = 0;
+                    indices[i+1]++;
+                    blockindices[i-1] = 0;
+                    i++;
+                }
+            }
+            else                    //the end of the line
+            {
+                isend = 1;
+                break;
+            }
+        }
+        else                    //the end of the line
+        {
+            isend = 1;
+            break;
+        }
+    }
+    if( !isend ) if( !blocksizes[0][blockindices[0]] ) IncrementInternal();    //if the current block in dim 0 has blocksize zero, do it again, because there is no allowed entry here, due to truncation
 }
 
 

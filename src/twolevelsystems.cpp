@@ -40,7 +40,7 @@ PetscErrorCode	TLS::TLSAdd(PetscInt ntls, PetscInt n10cutoff, PetscInt n01cutoff
 
     PetscErrorCode	ierr;
 
-    N_MLS = ntls;
+    N_MLS[0] = ntls;
 
     MLSDim	n11 (1,1), n10 (1,0), n01 (0,1);
 

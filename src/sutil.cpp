@@ -33,7 +33,7 @@ System::System ()
     num_mlsdens		= 0;
     num_modes		= 0;
     loc_size		= 0;
-    N_MLS		= 0;
+    N_D_MLS		    = 1;
     
     parallel_layout	= 0;
     modesetup		= 0;
@@ -69,12 +69,44 @@ System::~System()
 //-------------------------------------------------------------------------------------------------
 
 #undef __FUNCT__
+#define __FUNCT__ "MLSAdd"
+
+/**
+ * @brief    Adds a different type of mls. Not needed when only one type of mls is considered.
+ *
+ * @param    nmls        the number of individual mls of this type
+ *
+ * TODO:
+ *  - sanity check that checks whether any mls dimensions were added between two calls of mlsadd
+ */
+
+PetscErrorCode System::MLSAdd(PetscInt nmls)
+{
+    PetscFunctionBeginUser;
+    
+    if(N_D_MLS == MAX_D_MLS)
+    {
+        (*PetscErrorPrintf)("Maximum number of different MLS types reached!\n");
+        (*PetscErrorPrintf)("If you need to use more different types of mls then increase the MAX_D_MLS preprocessor constant in system.hpp.\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MAX_VALUE,"");
+    }
+    else
+    {
+        N_MLS[N_D_MLS] = nmls;
+        N_D_MLS++;
+    }
+    
+    PetscFunctionReturn(0);
+}
+
+
+#undef __FUNCT__
 #define __FUNCT__ "MLSAddDens"
 
 /**
  * @brief	Adds a mls density dimension.
  * 
- * @param	ketbra		the order of the density, i.e. the number of the ket and bra of the projector 
+ * @param	n   		the order of the density, i.e. the number of the ket and bra of the projector
  * @param	length		the length of the dim.
  * @param	energy		optional energy value for corresponding level. Only needed for thermal start values of the density matrix.
  * 
@@ -91,7 +123,7 @@ PetscErrorCode System::MLSAddDens(PetscInt n, PetscInt length, PetscReal energy)
     }
     else
     {
-      if( length <= N_MLS+1 )
+      if( length <= N_MLS[N_D_MLS-1] +1 )    //during setup the current MLS number maximum is called like this
       { 
 	MLSDim	*dim = new MLSDim (n,n,0,length,energy);
 	
@@ -103,7 +135,7 @@ PetscErrorCode System::MLSAddDens(PetscInt n, PetscInt length, PetscReal energy)
       else
       {
 	(*PetscErrorPrintf)("Invalid input for mls density:\n");
-	(*PetscErrorPrintf)("Current entry is: n(%d,%d) with length %d (MLS+1 = %d)\n",n,n,length,N_MLS+1);
+	(*PetscErrorPrintf)("Current entry is: n(%d,%d) with length %d (MLS+1 = %d)\n",n,n,length,N_MLS[N_D_MLS-1]+1);
 	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
     }
@@ -118,7 +150,7 @@ PetscErrorCode System::MLSAddDens(PetscInt n, PetscInt length, PetscReal energy)
 /**
  * @brief	Adds a mls density dimension.
  * 
- * @param	dim		the dimension
+ * @param	indim		the dimension
  * @param	length		the length of the dim.
  * @param	energy		optional energy value for corresponding level. Only needed for thermal start values of the density matrix.
  * 
@@ -135,7 +167,7 @@ PetscErrorCode System::MLSAddDens(MLSDim& indim, PetscInt length, PetscReal ener
     }
     else
     {
-      if( length <= N_MLS+1 && indim.IsDensity() )
+      if( length <= N_MLS[N_D_MLS-1]+1 && indim.IsDensity() )   //during setup the current MLS number maximum is called like this
       { 
 	MLSDim	*dim = new MLSDim (indim,0,length,energy);
 	
@@ -147,7 +179,7 @@ PetscErrorCode System::MLSAddDens(MLSDim& indim, PetscInt length, PetscReal ener
       else
       {
 	(*PetscErrorPrintf)("Invalid input for mls density:\n");
-	(*PetscErrorPrintf)("Current entry is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS+1);
+	(*PetscErrorPrintf)("Current entry is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS[N_D_MLS-1]+1);
 	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
     }
@@ -162,7 +194,8 @@ PetscErrorCode System::MLSAddDens(MLSDim& indim, PetscInt length, PetscReal ener
 /**
  * @brief	Adds a mls polarization dimension.
  * 
- * @param	name	the name of the dimension.
+ * @param	ket 	the number of the dimension.
+ * @param   bra     the number of the dimension.
  * @param	length	the length of the dimension.
  * 
  */
@@ -178,7 +211,7 @@ PetscErrorCode System::MLSAddPol(PetscInt ket, PetscInt bra, PetscInt length)
     }
     else
     {
-      if( length <= N_MLS+1 )
+      if( length <= N_MLS[N_D_MLS-1]+1 )
       {
 	MLSDim	*dim = new MLSDim (ket,bra,1,length,0.0);
 	
@@ -190,7 +223,7 @@ PetscErrorCode System::MLSAddPol(PetscInt ket, PetscInt bra, PetscInt length)
       {
 	(*PetscErrorPrintf)("Invalid input for mls polarization!\n");
 	(*PetscErrorPrintf)("Either wrong name or size.\n");
-	(*PetscErrorPrintf)("Current entry is: n(%d,%d) with length %d (MLS+1 = %d)\n",ket,bra,length,N_MLS+1);
+	(*PetscErrorPrintf)("Current entry is: n(%d,%d) with length %d (MLS+1 = %d)\n",ket,bra,length,N_MLS[N_D_MLS-1]+1);
 	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
     }
@@ -205,7 +238,7 @@ PetscErrorCode System::MLSAddPol(PetscInt ket, PetscInt bra, PetscInt length)
 /**
  * @brief	Adds a mls polarization dimension.
  * 
- * @param	name	the name of the dimension.
+ * @param	indim	the MLSDim identifier.
  * @param	length	the length of the dimension.
  * 
  */
@@ -221,7 +254,7 @@ PetscErrorCode System::MLSAddPol(MLSDim& indim, PetscInt length)
     }
     else
     {
-      if( length <= N_MLS+1 && !indim.IsDensity() )
+      if( length <= N_MLS[N_D_MLS-1]+1 && !indim.IsDensity() )
       {
 	MLSDim	*dim = new MLSDim (indim,1,length,0.0);
 	
@@ -233,7 +266,7 @@ PetscErrorCode System::MLSAddPol(MLSDim& indim, PetscInt length)
       {
 	(*PetscErrorPrintf)("Invalid input for mls polarization!\n");
 	(*PetscErrorPrintf)("Either wrong name or size.\n");
-	(*PetscErrorPrintf)("Current entry is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS+1);
+	(*PetscErrorPrintf)("Current entry is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS[N_D_MLS-1]+1);
 	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
     }

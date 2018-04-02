@@ -11,6 +11,13 @@
  */
 
 /**
+ * TEST:
+ *   - make sure that the old way of coding is preserved, what happens without mls, what happens with one type of mls
+ *
+ *
+ */
+
+/**
  * @mainpage	PsiQuaSP -- Permutation symmetry for identical Quantum Systems Package
  *
  * @section	one General information:
@@ -113,7 +120,8 @@
 
 #define MIN(a,b)	(((a)<(b))?(a):(b))			//!< minimum macro
 #define MAX(a,b)	(((a)>(b))?(a):(b))			//!< maximum macro
-#define MAX_PARAM	50					//!< maximum number of parameters that can be stored internally
+#define MAX_PARAM	50			        		//!< maximum number of parameters that can be stored internally
+#define MAX_D_MLS   10                          //!< maximum number of different types of mls
 
 class Index;
 class Dim;
@@ -152,19 +160,20 @@ class System
   // Parameters for system specification:
   // mainly needed for the constructor call of Index *index.
   //-----------------------------------------------------------------
-    PetscInt		N_MLS;				//!< total number of mls
-    PetscInt		num_dims;			//!< how many dimensions in total
-    PetscInt		num_mlsdims;			//!< how many mls dimensions
-    PetscInt		num_mlsdens;			//!< how many mls density degrees of freedom
-    PetscInt		num_modes;			//!< how many bosonic modes
-    PetscInt		loc_size;			//!< how many local dm entries?
+    PetscInt		N_MLS[MAX_D_MLS] = {};		//!< total number of mls
+    PetscInt        N_D_MLS;                    //!< total number of different mls
+    PetscInt		num_dims;			        //!< how many dimensions in total
+    PetscInt		num_mlsdims;			    //!< how many mls dimensions
+    PetscInt		num_mlsdens;			    //!< how many mls density degrees of freedom
+    PetscInt		num_modes;			        //!< how many bosonic modes
+    PetscInt		loc_size;			        //!< how many local dm entries?
 
     std::list<Dim*>	dimensions;			//!< name of the dim
 
 
     //sanity check flags
-    PetscInt		parallel_layout;		//!< checks whether local distribution has already been set or not, is 0 if not, 1 if yes
-    PetscInt		modesetup;			//!< checks whether the user has already set a mode dimension, produces error messages if the MLS and mode dimension setup functions are mixed
+    PetscInt		parallel_layout;		    //!< checks whether local distribution has already been set or not, is 0 if not, 1 if yes
+    PetscInt		modesetup;			        //!< checks whether the user has already set a mode dimension, produces error messages if the MLS and mode dimension setup functions are mixed
 
 
   //-----------------------------------------------------------------
@@ -190,6 +199,7 @@ class System
   //-----------------------------------------------------------------
 
     //normal, beginner dimension setup
+    PetscErrorCode  MLSAdd(PetscInt nmls);
     PetscErrorCode	MLSAddDens(PetscInt n, PetscInt lenght,PetscReal energy);
     PetscErrorCode	MLSAddPol(PetscInt ket, PetscInt bra, PetscInt lenght);
     PetscErrorCode	MLSAddDens(MLSDim& dim, PetscInt lenght,PetscReal energy);
