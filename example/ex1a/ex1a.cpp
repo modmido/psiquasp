@@ -39,6 +39,7 @@ void OTC::Setup(Vec* dm, Mat* AA)
     
     index->PrintElements();
     index->PrintIndices();
+    index->PrintBlockSizes();
     
     //write start values into the density matrix
     PetscInt	qnumbers [5] = {1,0,0,0,0};
