@@ -336,9 +336,9 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim mls
 /**
  * @brief	This function initializes the Distribution for the offdiagonal mls contributions, e.g. for two-level systems the P[n,x,x] distribution with x \neq 0
  * 
- * @param	sys		the pointer to the system specification object. Needed for things like length of the dimension etc.
- * @param	mlsop		the name of the operator belonging to the transition
- * @param	number		the offdiagonal index -- the x in the above example.
+ * @param	sys		        the pointer to the system specification object. Needed for things like length of the dimension etc.
+ * @param	mlspol1_name	the name of the operator belonging to the transition
+ * @param	number		    the offdiagonal index -- the x in the above example.
  * 
  */
 
@@ -351,13 +351,17 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim mls
     
     //finding the dimension
     PetscInt		mlsdens=0, mlspol1=0, mlspol2=0;
-    MLSDim		mlspol2_name = mlspol1_name.Swap(mlspol1_name);	//swap constructor
-    MLSDim		mlsdens_name (1,mlspol1_name);			//density constructor
+    MLSDim		    mlspol2_name = mlspol1_name.Swap(mlspol1_name);	//swap constructor
+    MLSDim		    mlsdens_name (1,mlspol1_name);			        //density constructor
     
     ierr = sys->FindMatch(&mlspol1_name,&mlspol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&mlspol2); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens_name,&mlsdens); CHKERRQ(ierr);
-      
+    
+    
+    //multi mls functionality
+    PetscInt    mlstype = mlspol1_name.TypeNumber();
+    
     
     //basic properites
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
@@ -365,7 +369,7 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim mls
     
     
     //how many local dm entries?
-    PetscInt		locindex,max = MIN(sys->index->MaxQN(mlsdens)+1,sys->index->NMls()+1-2*number);
+    PetscInt		locindex,max = MIN(sys->index->MaxQN(mlsdens)+1,sys->index->NMls(mlstype)+1-2*number);
       
     if( sys->index->MaxQN(mlspol1) < number )	max = 0;
       

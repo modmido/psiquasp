@@ -44,9 +44,9 @@ PetscErrorCode	TLS::TLSAdd(PetscInt ntls, PetscInt n10cutoff, PetscInt n01cutoff
 
     MLSDim	n11 (1,1), n10 (1,0), n01 (0,1);
 
-    ierr  = MLSAddDens(n11,ntls+1,energy); CHKERRQ(ierr);
-    ierr  = MLSAddPol(n10,n10cutoff+1); CHKERRQ(ierr);
-    ierr  = MLSAddPol(n01,n01cutoff+1); CHKERRQ(ierr);
+    ierr  = MLSAddDens(&n11,ntls+1,energy); CHKERRQ(ierr);
+    ierr  = MLSAddPol(&n10,n10cutoff+1); CHKERRQ(ierr);
+    ierr  = MLSAddPol(&n01,n01cutoff+1); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -73,7 +73,7 @@ PetscErrorCode TLS::AddTLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscIn
     PetscErrorCode	ierr;
     MLSDim		n10 (1,0);
 
-    ierr = AddMLSH0(AA,d_nnz,o_nnz,choose,n10,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSH0(AA,d_nnz,o_nnz,choose,&n10,matrixelem); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -106,10 +106,10 @@ PetscErrorCode	TLS::AddTavisCummingsHamiltonianRWA(Mat AA, PetscInt * d_nnz, Pet
     ModeDim		mket (0,photonnumber);
     ModeDim		mbra (1,photonnumber);
 
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n10,n11,mbra,-matrixelem); CHKERRQ(ierr);		//Tavis-Cummings Hamiltonian
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n01,n11,mket,matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n00,n10,mket,matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n00,n01,mbra,-matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n10,&n11,mbra,-matrixelem); CHKERRQ(ierr);		//Tavis-Cummings Hamiltonian
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n01,&n11,mket,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n00,&n10,mket,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n00,&n01,mbra,-matrixelem); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -142,17 +142,17 @@ PetscErrorCode TLS::AddTavisCummingsHamiltonianNoRWA(Mat AA, PetscInt * d_nnz, P
     ModeDim		mket (0,photonnumber);
     ModeDim		mbra (1,photonnumber);
 
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n10,n11,mbra,-matrixelem);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n11,n10,mbra,-matrixelem);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n10,&n11,mbra,-matrixelem);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n11,&n10,mbra,-matrixelem);CHKERRQ(ierr);
 
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n01,n11,mket,matrixelem);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n11,n01,mket,matrixelem);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n01,&n11,mket,matrixelem);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n11,&n01,mket,matrixelem);CHKERRQ(ierr);
 
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n00,n10,mket,matrixelem);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n10,n00,mket,matrixelem);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n00,&n10,mket,matrixelem);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n10,&n00,mket,matrixelem);CHKERRQ(ierr);
 
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n00,n01,mbra,-matrixelem);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,n01,n00,mbra,-matrixelem);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n00,&n01,mbra,-matrixelem);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(AA,d_nnz,o_nnz,choose,&n01,&n00,mbra,-matrixelem);CHKERRQ(ierr);
 
 
     PetscFunctionReturn(0);
@@ -184,10 +184,10 @@ PetscErrorCode TLS::AddTLSCoherentDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_n
     MLSDim		n01 (0,1);
     MLSDim		n00 (0,0);
 
-    ierr = AddMLSCohDrive(AA,d_nnz,o_nnz,choose,n10,n11,-matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSCohDrive(AA,d_nnz,o_nnz,choose,n01,n11,matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSCohDrive(AA,d_nnz,o_nnz,choose,n00,n10,matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSCohDrive(AA,d_nnz,o_nnz,choose,n00,n01,-matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSCohDrive(AA,d_nnz,o_nnz,choose,&n10,&n11,-matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSCohDrive(AA,d_nnz,o_nnz,choose,&n01,&n11,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSCohDrive(AA,d_nnz,o_nnz,choose,&n00,&n10,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSCohDrive(AA,d_nnz,o_nnz,choose,&n00,&n01,-matrixelem); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -217,9 +217,9 @@ PetscErrorCode TLS::AddTLSSpontaneousEmission(Mat AA, PetscInt * d_nnz, PetscInt
     MLSDim		n01 (0,1);
     MLSDim		n00 (0,0);
 
-    ierr = AddLindbladRelaxMLS(AA,d_nnz,o_nnz,choose,n11,n00,matrixelem); CHKERRQ(ierr);		//Individual spontaneous emission of the TLS into vacuum
-    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,n10,matrixelem); CHKERRQ(ierr);
-    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,n01,matrixelem); CHKERRQ(ierr);
+    ierr = AddLindbladRelaxMLS(AA,d_nnz,o_nnz,choose,&n11,&n00,matrixelem); CHKERRQ(ierr);		//Individual spontaneous emission of the TLS into vacuum
+    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,&n10,matrixelem); CHKERRQ(ierr);
+    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,&n01,matrixelem); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -249,8 +249,8 @@ PetscErrorCode TLS::AddTLSPureDephasing(Mat AA, PetscInt * d_nnz, PetscInt * o_n
     MLSDim		n01 (0,1);
     MLSDim		n00 (0,0);
 
-    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,n10,2*matrixelem); CHKERRQ(ierr);
-    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,n01,2*matrixelem); CHKERRQ(ierr);
+    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,&n10,2*matrixelem); CHKERRQ(ierr);
+    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,&n01,2*matrixelem); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -280,9 +280,9 @@ PetscErrorCode TLS::AddTLSIncoherentPump(Mat AA, PetscInt * d_nnz, PetscInt * o_
     MLSDim		n01 (0,1);
     MLSDim		n00 (0,0);
 
-    ierr = AddLindbladRelaxMLS(AA,d_nnz,o_nnz,choose,n00,n11,matrixelem); CHKERRQ(ierr);		//Individual incoherent pumping
-    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,n10,matrixelem); CHKERRQ(ierr);
-    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,n01,matrixelem); CHKERRQ(ierr);
+    ierr = AddLindbladRelaxMLS(AA,d_nnz,o_nnz,choose,&n00,&n11,matrixelem); CHKERRQ(ierr);		//Individual incoherent pumping
+    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,&n10,matrixelem); CHKERRQ(ierr);
+    ierr = AddLindbladDephMLS(AA,d_nnz,o_nnz,choose,&n01,matrixelem); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -317,16 +317,16 @@ PetscErrorCode TLS::MatTLSJ10Left(Mat* AA, PetscScalar matrixelem)
 
 
     //preallocation
-    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n10,n00,1.0); CHKERRQ(ierr);		//Jl_{10}
-    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n11,n01,1.0); CHKERRQ(ierr);		//...
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,&n10,&n00,1.0); CHKERRQ(ierr);		//Jl_{10}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,&n11,&n01,1.0); CHKERRQ(ierr);		//...
 
     ierr = MatMPIAIJSetPreallocation(*AA,0,d_nnz,0,o_nnz); CHKERRQ(ierr);			//parallel
     ierr = MatSeqAIJSetPreallocation(*AA,0,d_nnz); CHKERRQ(ierr);				//and sequential
 
 
     //allocation
-    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n10,n00,1.0); CHKERRQ(ierr);		//Jl_{10}
-    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n11,n01,1.0); CHKERRQ(ierr);		//...
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,&n10,&n00,1.0); CHKERRQ(ierr);		//Jl_{10}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,&n11,&n01,1.0); CHKERRQ(ierr);		//...
 
     ierr = MatAssemblyBegin(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);				//Assemble the matrix
     ierr = MatAssemblyEnd(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);				//
@@ -365,14 +365,14 @@ PetscErrorCode TLS::MatTLSJ11Left(Mat *AA, PetscScalar matrixelem)
     MLSDim	n11 (1,1);
     MLSDim	n01 (0,1);
 
-    ierr = AddMLSSingleArrowNonconnecting(*AA,d_nnz,o_nnz,0,n11,1.0); CHKERRQ(ierr);
-    ierr = AddMLSSingleArrowNonconnecting(*AA,d_nnz,o_nnz,0,n01,1.0); CHKERRQ(ierr);
+    ierr = AddMLSSingleArrowNonconnecting(*AA,d_nnz,o_nnz,0,&n11,1.0); CHKERRQ(ierr);
+    ierr = AddMLSSingleArrowNonconnecting(*AA,d_nnz,o_nnz,0,&n01,1.0); CHKERRQ(ierr);
 
     ierr = MatMPIAIJSetPreallocation(*AA,0,d_nnz,0,o_nnz); CHKERRQ(ierr);		//preassembly, makes it faster if many elements are added
     ierr = MatSeqAIJSetPreallocation(*AA,0,d_nnz); CHKERRQ(ierr);
 
-    ierr = AddMLSSingleArrowNonconnecting(*AA,d_nnz,o_nnz,1,n11,matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSSingleArrowNonconnecting(*AA,d_nnz,o_nnz,1,n01,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSSingleArrowNonconnecting(*AA,d_nnz,o_nnz,1,&n11,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSSingleArrowNonconnecting(*AA,d_nnz,o_nnz,1,&n01,matrixelem); CHKERRQ(ierr);
 
     ierr = MatAssemblyBegin(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);			//actual assembly
     ierr = MatAssemblyEnd(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
@@ -412,14 +412,14 @@ PetscErrorCode TLS::MatTLSTCHamiltonianRWALeft(Mat *AA, PetscInt photonnumber, P
     MLSDim		n00 (0,0);
     ModeDim		mbra (1,photonnumber);
 
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n10,n11,mbra,1.0); CHKERRQ(ierr);				//Tavis-Cummings Hamiltonian
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00,n01,mbra,1.0); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,&n10,&n11,mbra,1.0); CHKERRQ(ierr);				//Tavis-Cummings Hamiltonian
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,&n00,&n01,mbra,1.0); CHKERRQ(ierr);
 
     ierr = MatMPIAIJSetPreallocation(*AA,0,d_nnz,0,o_nnz); CHKERRQ(ierr);		//preassembly, makes it faster if many elements are added
     ierr = MatSeqAIJSetPreallocation(*AA,0,d_nnz); CHKERRQ(ierr);
 
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n10,n11,mbra,matrixelem); CHKERRQ(ierr);			//Tavis-Cummings Hamiltonian
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00,n01,mbra,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,&n10,&n11,mbra,matrixelem); CHKERRQ(ierr);			//Tavis-Cummings Hamiltonian
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,&n00,&n01,mbra,matrixelem); CHKERRQ(ierr);
 
     ierr = MatAssemblyBegin(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);			//actual assembly
     ierr = MatAssemblyEnd(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
@@ -459,18 +459,18 @@ PetscErrorCode TLS::MatTLSTCHamiltonianNoRWALeft(Mat *AA, PetscInt photonnumber,
     MLSDim		n00 (0,0);
     ModeDim		mbra (1,photonnumber);
 
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n10,n11,mbra,1.0); CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n11,n10,mbra,1.0); CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00,n01,mbra,1.0); CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n01,n00,mbra,1.0); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,&n10,&n11,mbra,1.0); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,&n11,&n10,mbra,1.0); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,&n00,&n01,mbra,1.0); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,&n01,&n00,mbra,1.0); CHKERRQ(ierr);
 
     ierr = MatMPIAIJSetPreallocation(*AA,0,d_nnz,0,o_nnz); CHKERRQ(ierr);		//preassembly, makes it faster if many elements are added
     ierr = MatSeqAIJSetPreallocation(*AA,0,d_nnz); CHKERRQ(ierr);
 
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n10,n11,mbra,matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n11,n10,mbra,matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00,n01,mbra,matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n01,n00,mbra,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,&n10,&n11,mbra,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,&n11,&n10,mbra,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,&n00,&n01,mbra,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,&n01,&n00,mbra,matrixelem); CHKERRQ(ierr);
 
     ierr = MatAssemblyBegin(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);			//actual assembly
     ierr = MatAssemblyEnd(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
@@ -508,14 +508,14 @@ PetscErrorCode TLS::MatTLSCoherentDriveLeft(Mat *AA, PetscScalar matrixelem)
     MLSDim	n01 (0,1);
     MLSDim	n00 (0,0);
 
-    ierr = AddMLSCohDrive(*AA,d_nnz,o_nnz,0,n10,n11,1.0); CHKERRQ(ierr);
-    ierr = AddMLSCohDrive(*AA,d_nnz,o_nnz,0,n00,n01,1.0); CHKERRQ(ierr);
+    ierr = AddMLSCohDrive(*AA,d_nnz,o_nnz,0,&n10,&n11,1.0); CHKERRQ(ierr);
+    ierr = AddMLSCohDrive(*AA,d_nnz,o_nnz,0,&n00,&n01,1.0); CHKERRQ(ierr);
 
     ierr = MatMPIAIJSetPreallocation(*AA,0,d_nnz,0,o_nnz); CHKERRQ(ierr);
     ierr = MatSeqAIJSetPreallocation(*AA,0,d_nnz); CHKERRQ(ierr);
 
-    ierr = AddMLSCohDrive(*AA,d_nnz,o_nnz,1,n10,n11,matrixelem); CHKERRQ(ierr);
-    ierr = AddMLSCohDrive(*AA,d_nnz,o_nnz,1,n00,n01,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSCohDrive(*AA,d_nnz,o_nnz,1,&n10,&n11,matrixelem); CHKERRQ(ierr);
+    ierr = AddMLSCohDrive(*AA,d_nnz,o_nnz,1,&n00,&n01,matrixelem); CHKERRQ(ierr);
 
     ierr = MatAssemblyBegin(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);			//Assemble the matrix
     ierr = MatAssemblyEnd(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);			//
@@ -561,11 +561,11 @@ PetscErrorCode TLS::MatMLSLeftRightCollectiveRaisingOperator(Mat * AA)
 
 
     //preallocation
-    ierr = AddMLSSingleArrowConnecting(left,d_nnz,o_nnz,0,n10,n00,1.0); CHKERRQ(ierr);	//Jl_{10}
-    ierr = AddMLSSingleArrowConnecting(left,d_nnz,o_nnz,0,n11,n01,1.0); CHKERRQ(ierr);	//...
+    ierr = AddMLSSingleArrowConnecting(left,d_nnz,o_nnz,0,&n10,&n00,1.0); CHKERRQ(ierr);	//Jl_{10}
+    ierr = AddMLSSingleArrowConnecting(left,d_nnz,o_nnz,0,&n11,&n01,1.0); CHKERRQ(ierr);	//...
 
-    ierr = AddMLSSingleArrowConnecting(right,d_nnz,o_nnz,0,n01,n00,1.0); CHKERRQ(ierr);	//Jr_{01}
-    ierr = AddMLSSingleArrowConnecting(right,d_nnz,o_nnz,0,n11,n10,1.0); CHKERRQ(ierr);	//...
+    ierr = AddMLSSingleArrowConnecting(right,d_nnz,o_nnz,0,&n01,&n00,1.0); CHKERRQ(ierr);	//Jr_{01}
+    ierr = AddMLSSingleArrowConnecting(right,d_nnz,o_nnz,0,&n11,&n10,1.0); CHKERRQ(ierr);	//...
 
     ierr = MatMPIAIJSetPreallocation(left,0,d_nnz,0,o_nnz); CHKERRQ(ierr);			//parallel
     ierr = MatSeqAIJSetPreallocation(left,0,d_nnz); CHKERRQ(ierr);				//and sequential
@@ -575,11 +575,11 @@ PetscErrorCode TLS::MatMLSLeftRightCollectiveRaisingOperator(Mat * AA)
 
 
     //allocation
-    ierr = AddMLSSingleArrowConnecting(left,d_nnz,o_nnz,1,n10,n00,1.0); CHKERRQ(ierr);	//Jl_{10}
-    ierr = AddMLSSingleArrowConnecting(left,d_nnz,o_nnz,1,n11,n01,1.0); CHKERRQ(ierr);	//...
+    ierr = AddMLSSingleArrowConnecting(left,d_nnz,o_nnz,1,&n10,&n00,1.0); CHKERRQ(ierr);	//Jl_{10}
+    ierr = AddMLSSingleArrowConnecting(left,d_nnz,o_nnz,1,&n11,&n01,1.0); CHKERRQ(ierr);	//...
 
-    ierr = AddMLSSingleArrowConnecting(right,d_nnz,o_nnz,1,n01,n00,1.0); CHKERRQ(ierr);	//Jr_{01}
-    ierr = AddMLSSingleArrowConnecting(right,d_nnz,o_nnz,1,n11,n10,1.0); CHKERRQ(ierr);	//...
+    ierr = AddMLSSingleArrowConnecting(right,d_nnz,o_nnz,1,&n01,&n00,1.0); CHKERRQ(ierr);	//Jr_{01}
+    ierr = AddMLSSingleArrowConnecting(right,d_nnz,o_nnz,1,&n11,&n10,1.0); CHKERRQ(ierr);	//...
 
     ierr = MatAssemblyBegin(left,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);				//Assemble the matrix
     ierr = MatAssemblyEnd(left,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);				//
@@ -714,9 +714,9 @@ PetscErrorCode	DickeDistribution::SetupDickeDist(TLS * sys)
  * 		diagonal element i.e. SUM = 1*P[m,0,0] +0*P[m-1,1,1] +0*P[m-2,2,2] ... for the P[n11,n10,n01] two-level system vector entries. For that to be true the diagonal entry (x*P[m,0,0]) of the new ground state vector is set to one minus all diagonal entries of all other vectors of
  * 		matching inversion, and the offdiagonal entries (P[m,x,x]) are set to minus the sum of all respective other offdiagonal entries of the other vectors.
  *
- * @param	sys		the System object.
- * @param	root		the vector of the higher subspace
- * @param	elem		the root of the lower subspace
+ * @param	sys		    the System object.
+ * @param   step        the index of the subspace
+ * @param	elem		the root of the subspace (return type)
  *
  */
 

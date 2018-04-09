@@ -48,10 +48,12 @@ public:
 class MLSDim : public Dim
 {
 public:
-    PetscInt	ispol;		//!< is it a polarization or not
-    PetscInt	ket;		//!< the ket number
-    PetscInt	bra;		//!< the bra number
+    PetscInt	ispol;		    //!< is it a polarization or not
+    PetscInt	ket;		    //!< the ket number
+    PetscInt	bra;		    //!< the bra number
+    PetscInt    mlsTypeNumber;  //!< the mls type number, only really needed for multi mls usage
 
+    //constructors
     MLSDim(PetscInt left, PetscInt right, PetscInt polflag, PetscInt indimlength, PetscReal inenergy);
     MLSDim(const MLSDim& dim, PetscInt polflag, PetscInt indimlength, PetscReal inenergy);
     MLSDim(PetscInt left, PetscInt right);
@@ -60,12 +62,39 @@ public:
     
     static MLSDim	Swap(MLSDim swap);
     
+    //checks, I/O
     PetscInt		IsEqual(Dim * compare);
     PetscInt		IsDensity();
     std::string		ToString();
     PetscErrorCode	PrintName();
+    PetscInt        TypeNumber() { return 0; }
 };
 
+
+/**
+ * @brief    Class for all multi MLS dimensions. Contains all necessary information about the dimension. Also comes with some utility functions.
+ *
+ */
+
+class MultiMLSDim: public MLSDim
+{
+public:
+    
+    //constructors
+    MultiMLSDim(PetscInt left, PetscInt right, PetscInt polflag, PetscInt indimlength, PetscReal inenergy, PetscInt typeNumber);
+    MultiMLSDim(const MultiMLSDim& dim, PetscInt polflag, PetscInt indimlength, PetscReal inenergy);
+    MultiMLSDim(PetscInt left, PetscInt right, PetscInt typeNumber);
+    MultiMLSDim(PetscInt which, const MultiMLSDim& name);
+    MultiMLSDim(const MultiMLSDim& ketname, const MultiMLSDim& braname);
+    
+    static MultiMLSDim    Swap(MultiMLSDim swap);
+    
+    //checks, I/O
+    PetscInt            IsEqual(Dim * compare);
+    std::string         ToString();
+    PetscErrorCode      PrintName();
+    PetscInt            SameType(Dim * compare);
+};
 
 
 /**
@@ -79,9 +108,11 @@ public:
     PetscInt	number;
     PetscInt	ket;
 
+    //constructors
     ModeDim(PetscInt choose, PetscInt n, PetscInt dimlength, PetscReal energy);
     ModeDim(PetscInt choose, PetscInt n);
     
+    //checks, I/O
     std::string		ToString();
     PetscInt		IsEqual(Dim* compare);
     PetscErrorCode	PrintName();
