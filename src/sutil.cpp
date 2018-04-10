@@ -2,7 +2,7 @@
 /**
  * @file	sutil.cpp
  * 
- * 		Definition of the general System class methods except for the Liouvillian methods.
+ * 		    Definition of the general System class methods except for the Liouvillian methods.
  * 
  * @author	Michael Gegg
  * 
@@ -1776,26 +1776,28 @@ PetscErrorCode System::SameType(MLSDim *Ptr1, MLSDim *Ptr2, PetscInt * type)
 
 /**
  * @brief	Constructor of the Elem class, which is a (very) lightweight version of the Index class, just contains the  needed for the recursive operator action stuff.
- * 		Shouldn't do anything with the mode dofs, but they are included either way, in order to not to have to implement even more specialized  in the Index class.
+ * 		    Shouldn't do anything with the mode dofs, but they are included either way, in order to not to have to implement even more specialized  in the Index class.
  * 
  * @param	index		the Index object.
  * @param	inorder		the order of the normally ordered expectation value to be computed.
+ * @param   type        the type of mls
  * 
  */
 
-Elem::Elem(Index * index,PetscInt inorder)
+Elem::Elem(Index * index,PetscInt inorder, PetscInt type)
 {
     PetscInt	i;
     
-    indices	= new PetscInt [index->NumDims()];
+    indices	        = new PetscInt [index->NumDims()];
     for(i=0; i < index->NumDims(); i++)	indices[i] = index->Indices(i);
     
-    order	= inorder;
-    length	= index->NumDims();
-    mlslength	= index->MLSDims();
-    NMLS	= index->NMls();        //TODO: change the whole gnfct thing into sth that works with multiple mls
-    factor	= 1;
-    opactions	= 0;
+    order	        = inorder;
+    length	        = index->NumDims();
+    mlslength	    = index->MLSDims();
+    mlsTypeNumber   = type;
+    NMLS	        = index->NMls(type);
+    factor  	    = 1;
+    opactions	    = 0;
 }
 
 
@@ -1808,15 +1810,16 @@ Elem::Elem(const Elem& source)
 {
     PetscInt	i;
     
-    indices	= new PetscInt [source.length];
+    indices	        = new PetscInt [source.length];
     for(i=0; i < source.length; i++ )	indices[i] = source.indices[i];
     
-    order	= source.order;
-    length	= source.length;
-    mlslength	= source.mlslength;
-    NMLS	= source.NMLS;
-    factor	= source.factor;
-    opactions	= source.opactions;
+    order	        = source.order;
+    length	        = source.length;
+    mlslength	    = source.mlslength;
+    NMLS	        = source.NMLS;
+    factor	        = source.factor;
+    opactions	    = source.opactions;
+    mlsTypeNumber   = source.mlsTypeNumber;
 }
 
 

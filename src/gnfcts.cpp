@@ -102,9 +102,9 @@ Gnfct::~Gnfct()
 /**
  * @brief	Compute function for the Gnfct class. Usually called by the monitor function. Only the first processor gets the global result.
  * 
- * @param	dm		the density matrix.
+ * @param	dm		    the density matrix.
  * @param	time		the time of the time integration algorithm
- * @param	global		the global return value, only first processor gets it tough...
+ * @param	ret	    	the global return value, only first processor gets it tough...
  * @param	number		not needed here.
  * 
  */
@@ -149,9 +149,9 @@ PetscErrorCode Gnfct::Compute(Vec dm, PetscReal time, PetscScalar* ret, PetscInt
 /**
  * @brief	Compute function for the Gnfct class. All processors get the global result.
  * 
- * @param	dm		the density matrix.
+ * @param	dm		    the density matrix.
  * @param	time		the time of the time integration algorithm
- * @param	global		the global return value, only first processor gets it tough...
+ * @param	ret 		the global return value, only first processor gets it tough...
  * @param	number		not needed here.
  * 
  */
@@ -303,13 +303,13 @@ PetscErrorCode Gnfct::SetupModeGnfct(System* sys, PetscInt modenumber, PetscInt 
 /**
  * @brief	Setup the correlation function object.
  * 
- * @param	sys		the system specification object.
- * @param	order		order to the expectation value.
+ * @param	sys		    the system specification object.
+ * @param	inorder		order to the expectation value.
  * @param	destructor	the name of the destructor in the normally ordered expectation value; uniquely determines the quantity.
  * 
  */
 
-PetscErrorCode Gnfct::SetupMLSGnfct(System * sys,MLSDim destructor,PetscInt inorder)
+PetscErrorCode Gnfct::SetupMLSGnfct(System * sys,MLSDim * destructor,PetscInt inorder)
 {
     PetscFunctionBeginUser;
     
@@ -333,7 +333,7 @@ PetscErrorCode Gnfct::SetupMLSGnfct(System * sys,MLSDim destructor,PetscInt inor
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nMLS correlation function initialization: destructor %s,  order = %d\n",destructor.ToString().c_str(),inorder); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nMLS correlation function initialization: destructor %s,  order = %d\n",destructor->ToString().c_str(),inorder); CHKERRQ(ierr);
     }
     
     
@@ -350,14 +350,14 @@ PetscErrorCode Gnfct::SetupMLSGnfct(System * sys,MLSDim destructor,PetscInt inor
  * 		First computes all entries using SingleElementMLSNE(), then adds up all factors for same entries and thus cleaning the list using CombineSummands(),
  * 		and then checks whether the entries belong to the local part of the density matrix vector and stores them in the numbers, factors and length pointers.
  * 
- * @param	sys		the system specification object.
- * @param	order		the order n of the expectation value.
+ * @param	sys		        the system specification object.
+ * @param	order		    the order n of the expectation value.
  * @param	mlspol1_name	the name of the density corresponding to the destructor in the normally ordered expectation value
- * @param	choose		states whether the function call is for the numerator (choose = 0) or the denominator (choose > 0) in the correlation function
+ * @param	choose		    states whether the function call is for the numerator (choose = 0) or the denominator (choose > 0) in the correlation function
  * 
  */
 
-PetscErrorCode	Gnfct::MLSNormalorderedExpecationvalue(System * sys, PetscInt order, MLSDim mlspol1_name, PetscInt choose)
+PetscErrorCode	Gnfct::MLSNormalorderedExpecationvalue(System * sys, PetscInt order, MLSDim * mlspol1_name, PetscInt choose)
 {
     PetscFunctionBeginUser;
 
@@ -366,82 +366,86 @@ PetscErrorCode	Gnfct::MLSNormalorderedExpecationvalue(System * sys, PetscInt ord
     
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0, pol1 = 0, pol2 = 0;
-    MLSDim		mlspol2_name = mlspol1_name.Swap(mlspol1_name);		//swap constructor
-    MLSDim		mlsdens1_name (1,mlspol1_name);
-    MLSDim		mlsdens2_name (0,mlspol1_name);
+    MLSDim		    mlspol2_name = mlspol1_name->Swap(*mlspol1_name);		//swap constructor
+    MLSDim		    mlsdens1_name (1,*mlspol1_name);
+    MLSDim		    mlsdens2_name (0,*mlspol1_name);
     
     ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
-    ierr = sys->FindMatch(&mlspol1_name,&pol1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlspol1_name,&pol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&pol2); CHKERRQ(ierr);
 
 
+    //multi mls functionality
+    PetscInt    mlstype = mlspol1_name->TypeNumber();
+    
+    
     //basic properties
-    isherm	= 1;								//it is an observable that should be real valued.
+    isherm	= 1;								                        //it is an observable that should be real valued.
     
     
     //get all dm entries and prefactors for the normally ordered expectation value
     std::list<Elem*>	*result = new std::list<Elem*>;					//the storage for the resulting elements
     PetscInt		locindex;
-    locindex		= sys->index->InitializeGlobal();				//global start aka mr. groundstate
+    locindex		= sys->index->InitializeGlobal();				    //global start aka mr. groundstate
     
-    while ( sys->index->ContinueMLS() )							//loop over all mls dofs
+    while ( sys->index->ContinueMLS() )							        //loop over all mls dofs
     {
-      if( !sys->index->IsPol() )							//is it density like?
+      if( !sys->index->IsPol() )							            //is it density like?
       {
-	std::stack<Elem*>	input;							//recursion stack
-	Elem	*newelem = new Elem (sys->index,order);					//start element aka first element of the stack
+          std::stack<Elem*>	input;							            //recursion stack
+          Elem	*newelem = new Elem (sys->index,order,mlstype);					//start element aka first element of the stack
 	  
-	input.push(newelem);								//put it into the stack
+          input.push(newelem);								            //put it into the stack
 	  
-	ierr = SingleElementMLSNO(sys,dens1,pol2,pol1,dens2,result,&input);CHKERRQ(ierr);	//do the recursion
+          ierr = SingleElementMLSNO(sys,dens1,pol2,pol1,dens2,result,&input);CHKERRQ(ierr);	//do the recursion
       }
       locindex	= sys->index->Increment();
     }
 
       
     //clean the result
-    std::list<Elem*>	*clean = new std::list<Elem*>;					//storage for the clean list
+    std::list<Elem*>	*clean = new std::list<Elem*>;					    //storage for the clean list
       
     ierr	= Elem::CombineListElems(clean,result); CHKERRQ(ierr);			//make the clean list
     delete	result;
     
-    ierr	= Elem::ComputeIndex(sys,clean); CHKERRQ(ierr);				//compute each dmindex value and check whether the element exists in the index
+    ierr	= Elem::ComputeIndex(sys,clean); CHKERRQ(ierr);				    //compute each dmindex value and check whether the element exists in the index
       
-    clean->sort(Elem::ElemComp);							//sort the list in ascending order, this way the number of comparisions in the next while loop is minimized
+    clean->sort(Elem::ElemComp);							                //sort the list in ascending order, this way the number of comparisions in the next while loop is minimized
     
     
     //allocate storage and transfer it into the proper form
     PetscInt	count	= 0;
-    if( clean->empty() )								//if there is nothing here this means we need dummy values..
+    if( clean->empty() )								                    //if there is nothing here this means we need dummy values..
     {
       ierr = AllocateLocStorage(count,choose); CHKERRQ(ierr);
     }
     else
     {
-      locindex	= sys->index->InitializeLocal();				//start with the first local element
+      locindex	= sys->index->InitializeLocal();				            //start with the first local element
       
-      std::list<Elem*>::iterator it	= clean->begin();				//set the iterator to the first list element
+      std::list<Elem*>::iterator it	= clean->begin();				        //set the iterator to the first list element
       while( (*it)->dmindex < sys->index->MLSIndex() ) 
       {
-	(*it)->PrintIndices();
-	it++;										//then find the first one that is contained in the local snippet
-	if( it == clean->end() )							//if the first one contained in the local snippet is larger than the last one in the list
-	{
-	  it = clean->begin();							//then it is again the first one
-	  break;									//and we are done
-	}
+          (*it)->PrintIndices();
+          it++;										                        //then find the first one that is contained in the local snippet
+          if( it == clean->end() )							                //if the first one contained in the local snippet is larger than the last one in the list
+          {
+              it = clean->begin();							                //then it is again the first one
+              break;									                    //and we are done
+          }
       }
-      while( sys->index->ContinueLocal() )						//while there are local elements
+      while( sys->index->ContinueLocal() )						            //while there are local elements
       {
-	if( (*it)->dmindex == sys->index->MLSIndex() && sys->index->IsModeDensity() )	//if the index of the element is equal to the MLSIndex of the Index object then the element should be taken
-	{
-	  count++;									//so we increase count, i.e. the number of local elements
-	  it++;										//and we take the next list element, since also the index goes in ascending order, minimizes number of comparisions!
-	  if( it == clean->end() )	it = clean->begin();				//when we are at the end of the list we start anew.
-	}
+          if( (*it)->dmindex == sys->index->MLSIndex() && sys->index->IsModeDensity() )	//if the index of the element is equal to the MLSIndex of the Index object then the element should be taken
+          {
+              count++;									            //so we increase count, i.e. the number of local elements
+              it++;										            //and we take the next list element, since also the index goes in ascending order, minimizes number of comparisions!
+              if( it == clean->end() )	it = clean->begin();		//when we are at the end of the list we start anew.
+          }
 	
-	sys->index->Increment();
+          sys->index->Increment();
       }
       
       
@@ -453,34 +457,34 @@ PetscErrorCode	Gnfct::MLSNormalorderedExpecationvalue(System * sys, PetscInt ord
       count		= 0;
       locindex		= sys->index->InitializeLocal();				//start with the first local element
       
-      it = clean->begin();								//set the iterator to the first list element
+      it = clean->begin();								            //set the iterator to the first list element
       while( (*it)->dmindex < sys->index->MLSIndex() ) 
       {
-	it++;										//then find the first one that is contained in the local snippet
-	if( it == clean->end() )							//if the first one contained in the local snippet is larger than the last one in the list
-	{
-	  it = clean->begin();								//then it is again the first one
-	  break;									//and we are done
-	}
+          it++;										                //then find the first one that is contained in the local snippet
+          if( it == clean->end() )							        //if the first one contained in the local snippet is larger than the last one in the list
+          {
+              it = clean->begin();								    //then it is again the first one
+              break;									            //and we are done
+          }
       }
-      while( sys->index->ContinueLocal() )						//while there are local elements
+      while( sys->index->ContinueLocal() )						    //while there are local elements
       {
-	if( (*it)->dmindex == sys->index->MLSIndex() && sys->index->IsModeDensity() )	//if the index of the element is equal to the MLSIndex of the Index object then the element should be taken, but only if the modes are density like!!!
-	{
-	  numbers[choose][count]	= locindex - sys->index->LocStart();		//store necessary 
-	  factors[choose][count]	= (*it)->factor;				//
+          if( (*it)->dmindex == sys->index->MLSIndex() && sys->index->IsModeDensity() )	//if the index of the element is equal to the MLSIndex of the Index object then the element should be taken, but only if the modes are density like!!!
+          {
+              numbers[choose][count]	= locindex - sys->index->LocStart();		//store necessary
+              factors[choose][count]	= (*it)->factor;				            //
 	  
-	  count++;									//so we increase count, i.e. the number of local elements
-	  it++;										//and we take the next list element, since also the index goes in ascending order, minimizes number of comparisions!
-	  if( it == clean->end() )	it = clean->begin();				//when we are at the end of the list we start anew.
-	}
+              count++;									            //so we increase count, i.e. the number of local elements
+              it++;										            //and we take the next list element, since also the index goes in ascending order, minimizes number of comparisions!
+              if( it == clean->end() )	it = clean->begin();		//when we are at the end of the list we start anew.
+          }
 	
-	locindex = sys->index->Increment();
+          locindex = sys->index->Increment();
       }
       
-      for (it=clean->begin(); it != clean->end(); ++it)					//delete clean list
+      for (it=clean->begin(); it != clean->end(); ++it)			    //delete clean list
       {
-	delete *it;
+          delete *it;
       }
       delete clean;
     }
@@ -504,8 +508,7 @@ PetscErrorCode	Gnfct::MLSNormalorderedExpecationvalue(System * sys, PetscInt ord
  * @param	rightpol	the number of the right polarisation associated to the lowering operators, i.e. nyx
  * @param	lowerdens	the number of the lower density dof, i.e. nyy. Can be set to -1 for n00.
  * @param	result		the list of elements occuring due to the action of the operators. This is the function output.
- * @param	input		the stack for the recursion. Also determines the input since at the beginning of the recursion the stack has to have only one entry - the (diagonal) start entry. 
- * @param	inret		contains the raw output of the computation, needs to be intialized before function call.
+ * @param	input		the stack for the recursion. Also determines the input since at the beginning of the recursion the stack has to have only one entry - the (diagonal) start entry.
  * 
  */
 
@@ -524,77 +527,77 @@ PetscErrorCode Gnfct::SingleElementMLSNO(System * sys, PetscInt dens, PetscInt l
       
       if( loc.opactions < loc.order )						//first stage: action of the destruction operators i.e.  J_yx |... nxx ... nxy = 0 ... nyy ...><... nxx ... nyx ... nyy... |  with y < x
       {
-	if( loc.indices[dens] > 0 )						//we can ony destroy an excitation if there is one
-	{
-	  Elem	*newelem = new Elem (loc);					//first copy old element
+          if( loc.indices[dens] > 0 )						//we can ony destroy an excitation if there is one
+          {
+              Elem	*newelem = new Elem (loc);					//first copy old element
 	  
-	  newelem->indices[dens]--;						//the excitation is destroyed on the left (ket) side of the element nxx -> nxx-1
-	  newelem->indices[rightpol]++;						//this means that nyx -> nyx+1
+              newelem->indices[dens]--;						//the excitation is destroyed on the left (ket) side of the element nxx -> nxx-1
+              newelem->indices[rightpol]++;						//this means that nyx -> nyx+1
 	  
-	  newelem->factor *= newelem->indices[rightpol];			//something like factor *= (nyx+1)
-	  newelem->opactions++;							//number of operator actions has to be increased
+              newelem->factor *= newelem->indices[rightpol];			//something like factor *= (nyx+1)
+              newelem->opactions++;							//number of operator actions has to be increased
 	
-	  input->push(newelem);							//put it onto the stack
-	}
+              input->push(newelem);							//put it onto the stack
+          }
 	
-	ierr = SingleElementMLSNO(sys,dens,leftpol,rightpol,lowerdens,result,input); CHKERRQ(ierr); 		//commence recursion
+          ierr = SingleElementMLSNO(sys,dens,leftpol,rightpol,lowerdens,result,input); CHKERRQ(ierr); 		//commence recursion
       }
       else if( loc.opactions < 2*loc.order )					//second stage: action of the creation operators
       {
-	if( loc.indices[rightpol] > 0 )						//creating an excitation on the left side which is already present on the right side
-	{
-	 Elem	*newelem = new Elem (loc);					//first copy old element
+          if( loc.indices[rightpol] > 0 )						//creating an excitation on the left side which is already present on the right side
+          {
+              Elem	*newelem = new Elem (loc);					//first copy old element
 	  
-	  newelem->indices[dens]++;						//the excitation is created on the left (ket) side of the element while it is already present on the right (bra) side
-	  newelem->indices[rightpol]--;						//this means that nxx -> nxx+1 and nyx -> nyx-1
+              newelem->indices[dens]++;						//the excitation is created on the left (ket) side of the element while it is already present on the right (bra) side
+              newelem->indices[rightpol]--;						//this means that nxx -> nxx+1 and nyx -> nyx-1
 	  
-	  newelem->factor *= newelem->indices[dens];				//something like factor *= (nxx+1)
-	  newelem->opactions++;							//number of operator actions has to be increased
+              newelem->factor *= newelem->indices[dens];				//something like factor *= (nxx+1)
+              newelem->opactions++;							//number of operator actions has to be increased
 
-	  input->push(newelem);							//put it onto the stack
-	}
-	if( lowerdens != -1 && loc.indices[lowerdens] > 0 )			//create an excitation on the left which is not present on the right side
-	{
-	  Elem	*newelem = new Elem (loc);					//first copy the old element
+              input->push(newelem);							//put it onto the stack
+          }
+          if( lowerdens != -1 && loc.indices[lowerdens] > 0 )			//create an excitation on the left which is not present on the right side
+          {
+              Elem	*newelem = new Elem (loc);					//first copy the old element
 	  
-	  newelem->indices[lowerdens]--;					//the excitation is created on the left (ket) side of the element while it is not present on the right (bra) side
-	  newelem->indices[leftpol]++;						//this means that nxy -> nxy+1 and nyy -> nyy-1
+              newelem->indices[lowerdens]--;					//the excitation is created on the left (ket) side of the element while it is not present on the right (bra) side
+              newelem->indices[leftpol]++;						//this means that nxy -> nxy+1 and nyy -> nyy-1
 	  
-	  newelem->factor *= newelem->indices[leftpol];				//something like factor *= (nxy+1)
-	  newelem->opactions++;							//number of operator actions has to be increased
+              newelem->factor *= newelem->indices[leftpol];				//something like factor *= (nxy+1)
+              newelem->opactions++;							//number of operator actions has to be increased
 	
-	  input->push(newelem);							//put it onto the stack
-	}
-	else if ( lowerdens == -1 && loc.n00() > 0 )				//create an excitation on the left which is not present on the right side && lowerdens == n00
-	{
-	  Elem	*newelem = new Elem (loc);					//first copy the old element
+              input->push(newelem);							//put it onto the stack
+          }
+          else if ( lowerdens == -1 && loc.n00() > 0 )				//create an excitation on the left which is not present on the right side && lowerdens == n00
+          {
+              Elem	*newelem = new Elem (loc);					//first copy the old element
 	  
-	  newelem->indices[leftpol]++;						//the excitation is created on the left (ket) side of the element while it is not present on the right (bra) side and nyy is n00 and therefore omitted
+              newelem->indices[leftpol]++;						//the excitation is created on the left (ket) side of the element while it is not present on the right (bra) side and nyy is n00 and therefore omitted
 	  
-	  newelem->factor *= newelem->indices[leftpol];				//something like factor *= (nxy+1)
-	  newelem->opactions++;							//number of operator actions has to be increased
+              newelem->factor *= newelem->indices[leftpol];				//something like factor *= (nxy+1)
+              newelem->opactions++;							//number of operator actions has to be increased
 	  
-	  input->push(newelem);							//put it onto the stack
-	}
+              input->push(newelem);							//put it onto the stack
+          }
 	
-	ierr = SingleElementMLSNO(sys,dens,leftpol,rightpol,lowerdens,result,input); CHKERRQ(ierr); 		//commence recursion
+          ierr = SingleElementMLSNO(sys,dens,leftpol,rightpol,lowerdens,result,input); CHKERRQ(ierr); 		//commence recursion
       }
       else									//third stage: all operators have acted, copy into output
       {
-	Elem	*newelem = new Elem (loc);					//first copy the old element, with using new!
+          Elem	*newelem = new Elem (loc);					//first copy the old element, with using new!
 	
-	if( !sys->index->MLSOutOfBounds(newelem->indices) )
-	{
-	  result->push_back(newelem);						//put it into the output list
-	}
-	else
-	{
-	  (*PetscErrorPrintf)("Error: Elements of correlation function are not contained in the used density matrix boundaries!\n");				//means that we messed up something
-	  (*PetscErrorPrintf)("Either increase system size/number of offdiagonals or reduce order of the correlation function!\n");				//means that we messed up something
-	  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");													//so we abort
-	}
+          if( !sys->index->MLSOutOfBounds(newelem->indices) )
+          {
+              result->push_back(newelem);						//put it into the output list
+          }
+          else
+          {
+              (*PetscErrorPrintf)("Error: Elements of correlation function are not contained in the used density matrix boundaries!\n");				//means that we messed up something
+              (*PetscErrorPrintf)("Either increase system size/number of offdiagonals or reduce order of the correlation function!\n");				//means that we messed up something
+              SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");													//so we abort
+          }
 	
-	ierr = SingleElementMLSNO(sys,dens,leftpol,rightpol,lowerdens,result,input); CHKERRQ(ierr); 								//commence recursion
+          ierr = SingleElementMLSNO(sys,dens,leftpol,rightpol,lowerdens,result,input); CHKERRQ(ierr); 								//commence recursion
       }
     }
     PetscFunctionReturn(0);

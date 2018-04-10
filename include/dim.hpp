@@ -34,8 +34,8 @@ public:
     Dim() { dimlength = 0; energy = 0.0; }
     virtual	~Dim() { } 
     
-    virtual	std::string	ToString() = 0;
-    virtual	PetscInt	IsEqual(Dim * compare) = 0;
+    virtual	std::string	    ToString() = 0;
+    virtual	PetscInt	    IsEqual(Dim * compare) = 0;
     virtual	PetscErrorCode	PrintName() = 0;
 };
 

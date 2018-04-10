@@ -2,8 +2,8 @@
 /**
  * @file	sliouville.cpp
  * 
- * 		Definition of the System class methods for setting up the Jacobian matrix of the master equation
- * 		and some other Liouville space operators.
+ * 		    Definition of the System class methods for setting up the Jacobian matrix of the master equation
+ * 		    and some other Liouville space operators.
  * 
  * @author	Michael Gegg
  * 
@@ -226,7 +226,7 @@ PetscErrorCode	System::AddModeH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, Pet
   
     //finding the dimensions
     PetscInt	mode;
-    ModeDim	modedim (0,modenumber);
+    ModeDim	    modedim (0,modenumber);
     
     ierr = FindMatch(&modedim,&mode); CHKERRQ(ierr);
     

@@ -381,7 +381,8 @@ class Elem
     PetscReal	factor;				//the prefactor for the dm entry for computation
     PetscInt	opactions;			//the number of operators that have been applied to the entry, should be twice the order in the end g^(2) ~ <JdJdJJ> i.e. four operators
     PetscInt	order;				//the order of the normal ordered expectation value: 2 for <JdJdJJ>
-
+    PetscInt    mlsTypeNumber;      //the type of mls
+    
     inline	PetscInt	EqualIndices(const Elem& comp);		//are the all indices the same?
     inline	PetscInt	n00();					//compute the n00 value
 
@@ -390,10 +391,10 @@ class Elem
     static PetscErrorCode	CombineListElems(std::list< Elem* >* clean, std::list< Elem* >* raw);
     static bool			ElemComp(const Elem* first, const Elem* second);		//static member functions do not know a thing about the current element, needed for sorting algorithms
 
-    Elem(Index * index,PetscInt inorder);				//normal constructor
-    Elem(const Elem& source);						//copy constructor
+    Elem(Index * index,PetscInt inorder, PetscInt type);				//normal constructor
+    Elem(const Elem& source);						                    //copy constructor
 
-    ~Elem();								//default destructor
+    ~Elem();								                            //default destructor
 };
 
 

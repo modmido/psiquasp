@@ -265,7 +265,7 @@ PetscErrorCode Distribution::SetupModeDistribution(System * sys,PetscInt modenum
  * 
  */
 
-PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim mlsdens)
+PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim * mlsdens)
 {
     PetscFunctionBeginUser;
     
@@ -275,12 +275,12 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim mls
     //finding the dimensions  
     PetscInt	dim=0;
     
-    ierr = sys->FindMatch(&mlsdens,&dim); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens,&dim); CHKERRQ(ierr);
     
     
     //basic properites
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "MLS"+ mlsdens.ToString();
+    name			        = "MLS"+ mlsdens->ToString();
     
     
     //how many local dm entries?
@@ -289,11 +289,11 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim mls
     memset(templengths,0,(sys->index->MaxQN(dim)+1)*sizeof(PetscInt));
     locindex		= sys->index->InitializeLocal();
     
-    while ( sys->index->ContinueLocal() )						//loop over all local rows
+    while ( sys->index->ContinueLocal() )						        //loop over all local rows
     {
-      if( !sys->index->IsPol() )							//if everyting is density like we take it
+      if( !sys->index->IsPol() )							            //if everyting is density like we take it
       {
-	templengths[sys->index->MLSQN(dim)]++;
+          templengths[sys->index->MLSQN(dim)]++;
       }
       locindex	= sys->index->Increment();
     }
@@ -312,8 +312,8 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim mls
     {
       if( !sys->index->IsPol() )								//if everyting is density like we take it
       {
-	dmindex[sys->index->MLSQN(dim)][loccount[sys->index->MLSQN(dim)]]	= locindex - sys->index->LocStart();	//local array starts with index zero, i.e. is shifted with respect to the global index
-	loccount[sys->index->MLSQN(dim)]++;
+          dmindex[sys->index->MLSQN(dim)][loccount[sys->index->MLSQN(dim)]]	= locindex - sys->index->LocStart();	//local array starts with index zero, i.e. is shifted with respect to the global index
+          loccount[sys->index->MLSQN(dim)]++;
       }
       locindex	= sys->index->Increment();
     }
@@ -322,7 +322,7 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim mls
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nDistribution for mls density %s initialized.\n",mlsdens.ToString().c_str()); CHKERRQ(ierr); 
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nDistribution for mls density %s initialized.\n",mlsdens->ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -342,7 +342,7 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim mls
  * 
  */
 
-PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim mlspol1_name,PetscInt number)
+PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim * mlspol1_name,PetscInt number)
 {
     PetscFunctionBeginUser;
     
@@ -351,21 +351,21 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim mls
     
     //finding the dimension
     PetscInt		mlsdens=0, mlspol1=0, mlspol2=0;
-    MLSDim		    mlspol2_name = mlspol1_name.Swap(mlspol1_name);	//swap constructor
-    MLSDim		    mlsdens_name (1,mlspol1_name);			        //density constructor
+    MLSDim		    mlspol2_name = mlspol1_name->Swap(*mlspol1_name);	//swap constructor
+    MLSDim		    mlsdens_name (1,*mlspol1_name);			            //density constructor
     
-    ierr = sys->FindMatch(&mlspol1_name,&mlspol1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlspol1_name,&mlspol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&mlspol2); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens_name,&mlsdens); CHKERRQ(ierr);
     
     
     //multi mls functionality
-    PetscInt    mlstype = mlspol1_name.TypeNumber();
+    PetscInt    mlstype = mlspol1_name->TypeNumber();
     
     
     //basic properites
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "MLS"+ mlsdens_name.ToString() + "_offdiag" + std::to_string(number);
+    name			        = "MLS"+ mlsdens_name.ToString() + "_offdiag" + std::to_string(number);
     
     
     //how many local dm entries?
@@ -386,11 +386,11 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim mls
     
       while ( sys->index->ContinueLocal() )										//loop over all local rows
       {
-	if( sys->index->IsMLSTwoDimNumberOffdiag(mlspol1,mlspol2,number) && sys->index->IsModeDensity() )		//if everyting is density like we take it
-	{
-	  templengths[sys->index->MLSQN(mlsdens)]++;
-	}
-	locindex	= sys->index->Increment();
+          if( sys->index->IsMLSTwoDimNumberOffdiag(mlspol1,mlspol2,number) && sys->index->IsModeDensity() )		//if everyting is density like we take it
+          {
+              templengths[sys->index->MLSQN(mlsdens)]++;
+          }
+          locindex	= sys->index->Increment();
       }
       
       
@@ -405,12 +405,12 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim mls
     
       while ( sys->index->ContinueLocal() )								//loop over all local rows
       {
-	if( sys->index->IsMLSTwoDimNumberOffdiag(mlspol1,mlspol2,number) && sys->index->IsModeDensity() )	//if everyting is density like we take it
-	{
-	  dmindex[sys->index->MLSQN(mlsdens)][loccount[sys->index->MLSQN(mlsdens)]]	= locindex - sys->index->LocStart();	//local array starts with index zero, i.e. is shifted with respect to the global index
-	  loccount[sys->index->MLSQN(mlsdens)]++;
-	}
-	locindex	= sys->index->Increment();
+          if( sys->index->IsMLSTwoDimNumberOffdiag(mlspol1,mlspol2,number) && sys->index->IsModeDensity() )	//if everyting is density like we take it
+          {
+              dmindex[sys->index->MLSQN(mlsdens)][loccount[sys->index->MLSQN(mlsdens)]]	= locindex - sys->index->LocStart();	//local array starts with index zero, i.e. is shifted with respect to the global index
+              loccount[sys->index->MLSQN(mlsdens)]++;
+          }
+          locindex	= sys->index->Increment();
       }
     }
       
@@ -418,7 +418,7 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim mls
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nDistribution for offdiagonal mls entries %s initialized.\n",mlspol1_name.ToString().c_str()); CHKERRQ(ierr); 
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nDistribution for offdiagonal mls entries %s initialized.\n",mlspol1_name->ToString().c_str()); CHKERRQ(ierr);
     }
 
     

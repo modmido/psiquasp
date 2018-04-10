@@ -62,7 +62,7 @@ class Observable: public PropBase
     PetscErrorCode	SetupMLSOccupationFull(System * sys, MLSDim * mlsop);
     PetscErrorCode	SetupMLSIntercoupling(System * sys, MLSDim * mlsop);
     PetscErrorCode	SetupMlsJzDiff(System * sys,MLSDim * Mlsdens1, MLSDim * Mlsdens2);
-    PetscErrorCode	SetupMlsJzSquaredNorm(System * sys,MLSDim Mlsdens1, MLSDim Mlsdens2);
+    PetscErrorCode	SetupMlsJzSquaredNorm(System * sys,MLSDim * Mlsdens1, MLSDim * Mlsdens2);
     PetscErrorCode	SetupMlsJzNorm(System * sys,MLSDim * Mlsdens1, MLSDim * Mlsdens2);
     PetscErrorCode	SetupTotalSpin(System * sys,MLSDim * Mlsdens1, MLSDim * Mlsdens2);
     

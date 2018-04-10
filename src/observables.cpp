@@ -376,21 +376,21 @@ PetscErrorCode Observable::SetupTr(System * sys)
 /**
  * @brief	This function initializes the Observable for computation of the <J_{xx}> expectation value.
  * 
- * @param	sys		also works with derived classes . Needed for local dm boundaries and things like that.
- * @param	mlsdens		the name of the density whose occupation is to be computed, i.e. n00, n11, n22, or the corresponding operator, i.e. j00, j11, etc.
+ * @param	sys		    also works with derived classes . Needed for local dm boundaries and things like that.
+ * @param	Mlsdens		the name of the density whose occupation is to be computed, i.e. n00, n11, n22, or the corresponding operator, i.e. j00, j11, etc.
  * 
  */
 
-PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim Mlsdens)
+PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim * Mlsdens)
 {
     PetscFunctionBeginUser;
     PetscErrorCode	ierr;
     
     //failsafe 
-    if( !Mlsdens.IsDensity() )
+    if( !Mlsdens->IsDensity() )
     {
       (*PetscErrorPrintf)("Invalid input for SetupMlsOccupation():\n");
-      (*PetscErrorPrintf)("Invalid input for mls density: current MLSDim is %s\n",Mlsdens.ToString().c_str());
+      (*PetscErrorPrintf)("Invalid input for mls density: current MLSDim is %s\n",Mlsdens->ToString().c_str());
       SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
     else
@@ -398,13 +398,13 @@ PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim Mlsdens)
       //finding the dimensions  
       PetscInt	dim=0;
       
-      ierr = sys->FindMatch(&Mlsdens,&dim); CHKERRQ(ierr);   
+      ierr = sys->FindMatch(Mlsdens,&dim); CHKERRQ(ierr);
     
       //basic properties
-      isherm			= 1;							//it is an observable that should be real valued.
-      shift			= 0;
+      isherm			    = 1;							            //it is an observable that should be real valued.
+      shift			        = 0;
       real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-      name			= "<J"+std::to_string(dim) + std::to_string(dim)+">";	
+      name			        = "<J"+std::to_string(dim) + std::to_string(dim)+">";
     
     
       //how many local dm entries?
@@ -413,11 +413,11 @@ PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim Mlsdens)
     
       while ( sys->index->ContinueLocal() )						//loop over all local rows
       {
-	if( !sys->index->IsPol() )
-	{
-	  length++;
-	}  
-	locindex	= sys->index->Increment();
+          if( !sys->index->IsPol() )
+          {
+              length++;
+          }
+          locindex	= sys->index->Increment();
       }
       
       
@@ -431,22 +431,22 @@ PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim Mlsdens)
       locindex	= sys->index->InitializeLocal();
       PetscInt	count	= 0;
 	
-      while ( sys->index->ContinueLocal() )						//loop over all local rows
+      while ( sys->index->ContinueLocal() )						        //loop over all local rows
       {
-	if( !sys->index->IsPol() )
-	{
-	  dmindex[0][count]	= locindex - sys->index->LocStart();			//local array starts with index zero, i.e. is shifted with respect to the global index
-	  prefactor[0][count]	= sys->index->MLSQN(dim);
-	  count++;
-	}
-	locindex	= sys->index->Increment();
+          if( !sys->index->IsPol() )
+          {
+              dmindex[0][count]	= locindex - sys->index->LocStart();			//local array starts with index zero, i.e. is shifted with respect to the global index
+              prefactor[0][count]	= sys->index->MLSQN(dim);
+              count++;
+          }
+          locindex	= sys->index->Increment();
       }
       
       
       //ouput part
       if(sys->LongOut() || sys->PropOut())
       {
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for occupation of %s dimension initialized.\n",(Mlsdens.ToString()).c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for occupation of %s dimension initialized.\n",(Mlsdens->ToString()).c_str()); CHKERRQ(ierr);
       }
     }
     
@@ -468,7 +468,7 @@ PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim Mlsdens)
  * 
  */
 
-PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim mlsop, PetscReal freq)
+PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim * mlsop, PetscReal freq)
 {
     PetscFunctionBeginUser;
   
@@ -478,13 +478,13 @@ PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim mlsop, Petsc
     //finding the dimensions  
     PetscInt		pol=0;
     
-    ierr = sys->FindMatch(&mlsop,&pol); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsop,&pol); CHKERRQ(ierr);
     
   
     //basic properties
     isherm			= 0;
     shift			= 0;
-    name			= "<"+mlsop.ToString().replace(0,1,"J")+">";
+    name			= "<"+mlsop->ToString().replace(0,1,"J")+">";
     
     
     //how many local dm entries?
@@ -495,7 +495,7 @@ PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim mlsop, Petsc
     {
       if( sys->index->IsMLSOneDimFirstOffdiag(pol) && sys->index->IsModeDensity() )	//all mls dofs are density like except the pol dimension which has value one && the modes are also all density like
       {
-	length++;
+          length++;
       }
      
       locindex	= sys->index->Increment();
@@ -512,21 +512,21 @@ PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim mlsop, Petsc
       
     while ( sys->index->ContinueLocal() )						//loop over all local rows
     {
-	if( sys->index->IsMLSOneDimFirstOffdiag(pol) && sys->index->IsModeDensity() )	//all mls dofs are density like except the pol dimension which has value one && the modes are also all density like
-	{
-	  dmindex[0][count]	= locindex - sys->index->LocStart();			//local array starts with index zero, i.e. is shifted with respect to the global index
-	  prefactor[0][count]	= 1;
-	  count++;
-	}
-      
-      locindex	= sys->index->Increment();
+        if( sys->index->IsMLSOneDimFirstOffdiag(pol) && sys->index->IsModeDensity() )	//all mls dofs are density like except the pol dimension which has value one && the modes are also all density like
+        {
+            dmindex[0][count]	= locindex - sys->index->LocStart();			//local array starts with index zero, i.e. is shifted with respect to the global index
+            prefactor[0][count]	= 1;
+            count++;
+        }
+        
+        locindex	= sys->index->Increment();
     }
 
     
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for MLS polarization %s initialized.\n", (mlsop.ToString()).c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for MLS polarization %s initialized.\n", (mlsop->ToString()).c_str()); CHKERRQ(ierr);
     }
     
 
@@ -549,7 +549,7 @@ PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim mlsop, Petsc
  * 
  */
 
-PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim mlsop, PetscInt order, PetscReal freq)
+PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim * mlsop, PetscInt order, PetscReal freq)
 {
     PetscFunctionBeginUser;
   
@@ -559,13 +559,13 @@ PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim mlsop,
     //finding the dimensions  
     PetscInt		pol=0;
     
-    ierr = sys->FindMatch(&mlsop,&pol); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsop,&pol); CHKERRQ(ierr);
     
 
     //basic properties
     isherm		= 0;
     shift		= 0;
-    name		= "<("+mlsop.ToString().replace(0,1,"J")+")^"+std::to_string(order)+">";
+    name		= "<("+mlsop->ToString().replace(0,1,"J")+")^"+std::to_string(order)+">";
     
     
     //how many local dm entries?
@@ -576,7 +576,7 @@ PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim mlsop,
     {
       if( sys->index->IsMLSOneDimNumberOffdiag(pol,order) && sys->index->IsModeDensity() )	//all mls dofs are density like except the pol dimension which has value one && the modes are also all density like
       {
-	length++;
+          length++;
       }
       
       locindex	= sys->index->Increment();
@@ -597,21 +597,21 @@ PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim mlsop,
       
     while ( sys->index->ContinueLocal() )						//loop over all local rows
     {
-	if( sys->index->IsMLSOneDimNumberOffdiag(pol,order) && sys->index->IsModeDensity() )	//all mls dofs are density like except the pol dimension which has value one && the modes are also all density like
-	{
-	  dmindex[0][count]	= locindex - sys->index->LocStart();			//local array starts with index zero, i.e. is shifted with respect to the global index
-	  prefactor[0][count]	= fac;
-	  count++;
-	}
-      
-      locindex	= sys->index->Increment();
+        if( sys->index->IsMLSOneDimNumberOffdiag(pol,order) && sys->index->IsModeDensity() )	//all mls dofs are density like except the pol dimension which has value one && the modes are also all density like
+        {
+            dmindex[0][count]	= locindex - sys->index->LocStart();			//local array starts with index zero, i.e. is shifted with respect to the global index
+            prefactor[0][count]	= fac;
+            count++;
+        }
+        
+        locindex	= sys->index->Increment();
     }
     
     
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for order %d MLS polarization %s initialized.\n", order, (mlsop.ToString()).c_str() ); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for order %d MLS polarization %s initialized.\n", order, (mlsop->ToString()).c_str() ); CHKERRQ(ierr);
     }
     
 
@@ -625,22 +625,22 @@ PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim mlsop,
 /**
  * @brief	This function initializes the Observable for computation of the < J_{xy} J_{yx} > expectation value. Only takes into account the two levels specified by the MLSDim. For multi-level systems this should not be used.
  * 
- * @param	sys		also works with derived classes . Needed for local dm boundaries and things like that.
- * @param	mlsop		the name of the second (rightmost) polarization operator in the expression, i.e. J_{yx} in this case.
+ * @param	sys		        also works with derived classes . Needed for local dm boundaries and things like that.
+ * @param	mlspol1_name	the name of the second (rightmost) polarization operator in the expression, i.e. J_{yx} in this case.
  * 
  */
 
-PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim& mlspol1_name)
+PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim * mlspol1_name)
 {
     PetscFunctionBeginUser;
     PetscErrorCode	ierr;
     
     //finding the dimensions  
     PetscInt		mlsdens=0, mlspol1=0, mlspol2=0;
-    MLSDim		mlspol2_name = mlspol1_name.Swap(mlspol1_name);		//swap constructor
-    MLSDim		mlsdens_name (1,mlspol1_name);				//density constructor
+    MLSDim		    mlspol2_name = mlspol1_name->Swap(*mlspol1_name);		//swap constructor
+    MLSDim		    mlsdens_name (1,*mlspol1_name);				            //density constructor
     
-    ierr = sys->FindMatch(&mlspol1_name,&mlspol1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlspol1_name,&mlspol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&mlspol2); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens_name,&mlsdens); CHKERRQ(ierr);
     
@@ -649,7 +649,7 @@ PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim& mlspol1_
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<"+mlspol2_name.ToString().replace(0,1,"J") + mlspol1_name.ToString().replace(0,1,"J")+">";
+    name			= "<"+mlspol2_name.ToString().replace(0,1,"J") + mlspol1_name->ToString().replace(0,1,"J")+">";
       
     
     //how many local dm entries?
@@ -662,13 +662,13 @@ PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim& mlspol1_
       //		 P[.. n_yy  .. n_yx = 0 .. n_xy = 0 .. n_xx ..; .. m,m .. ] density
       if( !sys->index->IsPol() )									//is it a density?
       {
-	length++;
+          length++;
       }
 
       //		 P[.. n_yy-1  .. n_yx = 1 .. n_xy = 1 .. n_xx-1 ..; .. m,m .. ] polarization
       if( sys->index->IsMLSTwoDimFirstOffdiag(mlspol1,mlspol2) && sys->index->IsModeDensity() )	//are the two pol dims equal to one and the rest density like && are all modes density like?
       {
-	length++;
+          length++;
       }
       
       locindex	= sys->index->Increment();
@@ -690,17 +690,17 @@ PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim& mlspol1_
       //		 P[.. n_yy  .. n_yx = 0 .. n_xy = 0 .. n_xx ..; .. m,m .. ] density
       if( !sys->index->IsPol() )
       {
-	dmindex[0][count]	= locindex - sys->index->LocStart();						//local array starts with index zero, i.e. is shifted with respect to the global index    
-	prefactor[0][count]	= sys->index->MLSQN(mlsdens);							//n_xx
-	count++;
+          dmindex[0][count]	= locindex - sys->index->LocStart();						//local array starts with index zero, i.e. is shifted with respect to the global index
+          prefactor[0][count]	= sys->index->MLSQN(mlsdens);							//n_xx
+          count++;
       }
       
       //		 P[.. n_yy-1  .. n_yx = 1 .. n_xy = 1 .. n_xx-1 ..; .. m,m .. ] polarization
       if( sys->index->IsMLSTwoDimFirstOffdiag(mlspol1,mlspol2) && sys->index->IsModeDensity() )			//are the two pol dims equal to one and the rest density like && are all modes density like?
       {
-	dmindex[0][count]	= locindex - sys->index->LocStart();						//local array starts with index zero, i.e. is shifted with respect to the global index
-	prefactor[0][count]	= 1; 										//  
-	count++;
+          dmindex[0][count]	= locindex - sys->index->LocStart();						//local array starts with index zero, i.e. is shifted with respect to the global index
+          prefactor[0][count]	= 1; 										//
+          count++;
       }
 	
       locindex	= sys->index->Increment();
@@ -710,7 +710,7 @@ PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim& mlspol1_
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMLSOccupationFull initialized: mlspol1 = %s mlspol2 = %s mlsdens = %s\n", mlspol1_name.ToString().c_str(),mlspol2_name.ToString().c_str(),mlsdens_name.ToString().c_str() ); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMLSOccupationFull initialized: mlspol1 = %s mlspol2 = %s mlsdens = %s\n", mlspol1_name->ToString().c_str(), mlspol2_name.ToString().c_str(), mlsdens_name.ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -724,12 +724,12 @@ PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim& mlspol1_
 /**
  * @brief	This function initializes the Observable for computation of the < J_{xy} J_{yx} - J_{xx}> expectation value. Only meaningful for two-level systems. For multi-level systems this should be constructed from the elementary matrices and the PModular functionality.
  * 
- * @param	sys		also works with derived classes . Needed for local dm boundaries and things like that.
- * @param	mlsop		the name of the second (lowering) polarization operator in the expression, i.e. J_{yx} in this case.
+ * @param	sys		            also works with derived classes . Needed for local dm boundaries and things like that.
+ * @param	mlspol1_name		the name of the second (lowering) polarization operator in the expression, i.e. J_{yx} in this case.
  * 
  */
 
-PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim mlspol1_name)
+PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim * mlspol1_name)
 {
     PetscFunctionBeginUser;
   
@@ -738,9 +738,9 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim mlspol1_na
     
     //finding the dimensions  
     PetscInt		mlspol1=0, mlspol2=0;
-    MLSDim		mlspol2_name  = mlspol1_name.Swap(mlspol1_name);			//swap constructor
+    MLSDim		    mlspol2_name  = mlspol1_name->Swap(*mlspol1_name);			//swap constructor
     
-    ierr = sys->FindMatch(&mlspol1_name,&mlspol1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlspol1_name,&mlspol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&mlspol2); CHKERRQ(ierr);
     
     
@@ -748,7 +748,7 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim mlspol1_na
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<"+mlspol2_name.ToString().replace(0,1,"s")+ "_i " + mlspol1_name.ToString().replace(0,1,"s")+"_j"+">";
+    name			= "<"+mlspol2_name.ToString().replace(0,1,"s")+ "_i " + mlspol1_name->ToString().replace(0,1,"s")+"_j"+">";
     
     
     //how many local dm entries?
@@ -761,7 +761,7 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim mlspol1_na
       //		 P[.. n_yy-1  .. n_yx = 1 .. n_xy = 1 .. n_xx-1 ..; .. m,m .. ] polarization
       if( sys->index->IsMLSTwoDimFirstOffdiag(mlspol1,mlspol2) && sys->index->IsModeDensity() )	//are the two pol dims equal to one and the rest density like && are all modes density like?
       {
-	length++;
+          length++;
       }
       
       locindex	= sys->index->Increment();
@@ -783,9 +783,9 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim mlspol1_na
       //		 P[.. n_yy-1  .. n_yx = 1 .. n_xy = 1 .. n_xx-1 ..; .. m,m .. ] polarization
       if( sys->index->IsMLSTwoDimFirstOffdiag(mlspol1,mlspol2) && sys->index->IsModeDensity() )			//are the two pol dims equal to one and the rest density like && are all modes density like?
       {
-	dmindex[0][count]	= locindex - sys->index->LocStart();						//local array starts with index zero, i.e. is shifted with respect to the global index
-	prefactor[0][count]	= 1; 										//  
-	count++;
+          dmindex[0][count]	= locindex - sys->index->LocStart();						//local array starts with index zero, i.e. is shifted with respect to the global index
+          prefactor[0][count]	= 1; 										//
+          count++;
       }
 	
       locindex	= sys->index->Increment();
@@ -795,7 +795,7 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim mlspol1_na
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMLSIntercoupling initialized: mlspol1 = %s \n", mlspol1_name.ToString().c_str() ); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMLSIntercoupling initialized: mlspol1 = %s \n", mlspol1_name->ToString().c_str() ); CHKERRQ(ierr);
     }
     
     
@@ -815,7 +815,7 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim mlspol1_na
  * 
  */
 
-PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim mlsdens1_name, MLSDim mlsdens2_name)
+PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim * mlsdens1_name, MLSDim * mlsdens2_name)
 {
     PetscFunctionBeginUser;
   
@@ -825,15 +825,15 @@ PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim mlsdens1_name, MLS
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0;
     
-    ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens1_name,&dens1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens2_name,&dens2); CHKERRQ(ierr);
 
     
     //basic properties
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 1.0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<("+mlsdens1_name.ToString().replace(0,1,"J") +"-"+ mlsdens2_name.ToString().replace(0,1,"J")+")^2-1>";
+    name			= "<("+mlsdens1_name->ToString().replace(0,1,"J") +"-"+ mlsdens2_name->ToString().replace(0,1,"J")+")^2-1>";
     
     
     //how many local dm entries?
@@ -875,7 +875,7 @@ PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim mlsdens1_name, MLS
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzDiff initialized: input: %s %s \n",mlsdens1_name.ToString().c_str(),mlsdens2_name.ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzDiff initialized: input: %s %s \n",mlsdens1_name->ToString().c_str(),mlsdens2_name->ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -888,15 +888,15 @@ PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim mlsdens1_name, MLS
 
 /**
  * @brief	This function initializes the Observable for computation of the < (J_{xy}^z)^2 > expectation value, using the 1/2 norm convention, i.e. J_{xy}^z = 1/2 (J_{xx}-J_{yy}). 
- * 		Needed e.g. for the spin squeezing inequality things...
+ * 		    Needed e.g. for the spin squeezing inequality things...
  * 
- * @param	sys		also works with derived classes . Needed for local dm boundaries and things like that.
- * @param	Mlsdens1	the name of the "upper" density, i.e. n_xx
- * @param	Mlsdens2	the name of the "lower" density, i.e. n_yy
+ * @param	sys		        also works with derived classes . Needed for local dm boundaries and things like that.
+ * @param	mlsdens1_name	the name of the "upper" density, i.e. n_xx
+ * @param	mlsdens2_name	the name of the "lower" density, i.e. n_yy
  * 
  */
 
-PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim mlsdens1_name, MLSDim mlsdens2_name)
+PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim * mlsdens1_name, MLSDim * mlsdens2_name)
 {
     PetscFunctionBeginUser;
   
@@ -906,15 +906,15 @@ PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim mlsdens1_n
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0;
     
-    ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens1_name,&dens1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens2_name,&dens2); CHKERRQ(ierr);
 
        
     //basic properties
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 0.0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<("+mlsdens1_name.ToString().replace(0,1,"J") +"/2-"+ mlsdens2_name.ToString().replace(0,1,"J")+"/2)^2>";
+    name			= "<("+mlsdens1_name->ToString().replace(0,1,"J") +"/2-"+ mlsdens2_name->ToString().replace(0,1,"J")+"/2)^2>";
     
     
     //how many local dm entries?
@@ -956,7 +956,7 @@ PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim mlsdens1_n
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzSquaredNorm initialized: input: %s %s \n",mlsdens1_name.ToString().c_str(),mlsdens2_name.ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzSquaredNorm initialized: input: %s %s \n",mlsdens1_name->ToString().c_str(),mlsdens2_name->ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -977,7 +977,7 @@ PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim mlsdens1_n
  * 
  */
 
-PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim mlsdens1_name, MLSDim mlsdens2_name)
+PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim * mlsdens1_name, MLSDim * mlsdens2_name)
 {
     PetscFunctionBeginUser;
   
@@ -987,15 +987,15 @@ PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim mlsdens1_name, ML
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0;
     
-    ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens1_name,&dens1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens2_name,&dens2); CHKERRQ(ierr);
        
 
     //basic properties
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 0.0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<("+mlsdens1_name.ToString().replace(0,1,"J") +"/2-"+ mlsdens2_name.ToString().replace(0,1,"J")+"/2)>";
+    name			= "<("+mlsdens1_name->ToString().replace(0,1,"J") +"/2-"+ mlsdens2_name->ToString().replace(0,1,"J")+"/2)>";
     
     
     //how many local dm entries?
@@ -1037,7 +1037,7 @@ PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim mlsdens1_name, ML
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzNorm initialized: input: %s %s \n",mlsdens1_name.ToString().c_str(),mlsdens2_name.ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzNorm initialized: input: %s %s \n",mlsdens1_name->ToString().c_str(),mlsdens2_name->ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -1057,7 +1057,7 @@ PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim mlsdens1_name, ML
  * 
  */
 
-PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim mlsdens1_name, MLSDim mlsdens2_name)
+PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim * mlsdens1_name, MLSDim * mlsdens2_name)
 {
     PetscFunctionBeginUser;
   
@@ -1066,11 +1066,11 @@ PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim mlsdens1_name, ML
     
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0, pol1 = 0, pol2 = 0;
-    MLSDim		mlspol1_name (mlsdens2_name,mlsdens1_name);
-    MLSDim		mlspol2_name (mlsdens1_name,mlsdens2_name);
+    MLSDim		    mlspol1_name (*mlsdens2_name,*mlsdens1_name);
+    MLSDim		    mlspol2_name (*mlsdens1_name,*mlsdens2_name);
     
-    ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens1_name,&dens1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens2_name,&dens2); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol1_name,&pol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&pol2); CHKERRQ(ierr);
     
@@ -1091,13 +1091,13 @@ PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim mlsdens1_name, ML
       //		 P[.. n_yy  .. n_yx = 0 .. n_xy = 0 .. n_xx ..; .. m,m .. ] density
       if( !sys->index->IsPol() )									//is it a density?
       {
-	length++;
+          length++;
       }
   
       //		 P[.. n_yy-1  .. n_yx = 1 .. n_xy = 1 .. n_xx-1 ..; .. m,m .. ] polarization
       if( sys->index->IsMLSTwoDimFirstOffdiag(pol1,pol2) && sys->index->IsModeDensity() )			//are the two pol dims equal to one and the rest density like && are all modes density like?
       {
-	length++;
+          length++;
       }
       locindex	= sys->index->Increment();
     }
@@ -1118,17 +1118,17 @@ PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim mlsdens1_name, ML
       //		 P[.. n_yy  .. n_yx = 0 .. n_xy = 0 .. n_xx ..; .. m,m .. ] density
       if( !sys->index->IsPol() )
       {
-	dmindex[0][count]	= locindex - sys->index->LocStart();			//local array starts with index zero, i.e. is shifted with respect to the global index
-	prefactor[0][count]	= (sys->index->MLSQN(dens1)-sys->index->MLSQN(dens2))*(sys->index->MLSQN(dens1)-sys->index->MLSQN(dens2))/4.0 + (sys->index->MLSQN(dens1)+sys->index->MLSQN(dens2))/2.0;
-	count++;
+          dmindex[0][count]	= locindex - sys->index->LocStart();			//local array starts with index zero, i.e. is shifted with respect to the global index
+          prefactor[0][count]	= (sys->index->MLSQN(dens1)-sys->index->MLSQN(dens2))*(sys->index->MLSQN(dens1)-sys->index->MLSQN(dens2))/4.0 + (sys->index->MLSQN(dens1)+sys->index->MLSQN(dens2))/2.0;
+          count++;
       }
       
       //		 P[.. n_yy-1  .. n_yx = 1 .. n_xy = 1 .. n_xx-1 ..; .. m,m .. ] polarization
       if( sys->index->IsMLSTwoDimFirstOffdiag(pol1,pol2) && sys->index->IsModeDensity() )			//are the two pol dims equal to one and the rest density like && are all modes density like?
       {
-	dmindex[0][count]	= locindex - sys->index->LocStart();						//local array starts with index zero, i.e. is shifted with respect to the global index
-	prefactor[0][count]	= 1; 										//  
-	count++;
+          dmindex[0][count]	= locindex - sys->index->LocStart();						//local array starts with index zero, i.e. is shifted with respect to the global index
+          prefactor[0][count]	= 1; 										//
+          count++;
       }
       locindex	= sys->index->Increment();
     }
@@ -1137,7 +1137,7 @@ PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim mlsdens1_name, ML
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupTotalSpin initialized: input: %s %s \n",mlsdens1_name.ToString().c_str(),mlsdens2_name.ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupTotalSpin initialized: input: %s %s \n",mlsdens1_name->ToString().c_str(),mlsdens2_name->ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -1160,7 +1160,7 @@ PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim mlsdens1_name, ML
 /**
  * @brief	This function initializes the Observable struct for computation of the <bdb> expectation value for a specific mode.
  * 
- * @param	sys		also works with derived classes . Needed for local dm boundaries and things like that.
+ * @param	sys		    also works with derived classes . Needed for local dm boundaries and things like that.
  * @param	modenumber	the number of the mode
  * 
  */
@@ -1194,7 +1194,7 @@ PetscErrorCode Observable::SetupModeOccupation(System * sys,PetscInt modenumber)
     {
       if( !sys->index->IsPol() )									//if everyting is density like we take it
       {
-	length++;
+          length++;
       }
       locindex = sys->index->Increment();
     }
@@ -1214,9 +1214,9 @@ PetscErrorCode Observable::SetupModeOccupation(System * sys,PetscInt modenumber)
     {
       if( !sys->index->IsPol() )									//if everything is density like we take it
       {
-	dmindex[0][count]	= locindex - sys->index->LocStart();					//local array starts with index zero, i.e. is shifted with respect to the global index
-	prefactor[0][count]	= sys->index->ModeQN(dim);
-	count++;
+          dmindex[0][count]	= locindex - sys->index->LocStart();					//local array starts with index zero, i.e. is shifted with respect to the global index
+          prefactor[0][count]	= sys->index->ModeQN(dim);
+          count++;
       }
       locindex	= sys->index->Increment();
     }
@@ -1237,9 +1237,9 @@ PetscErrorCode Observable::SetupModeOccupation(System * sys,PetscInt modenumber)
 #define __FUNCT__ "SetupModePolarization"
 
 /**
- * @brief	This function initializes the Observable struct for computation of the <b> expectation value.
+ * @brief	This function initializes the Observable struct for computation of the < b > expectation value.
  * 
- * @param	sys		Needed for local dm boundaries and things like that.
+ * @param	sys		    Needed for local dm boundaries and things like that.
  * @param	modenumber	the number of the mode
  * @param	freq		the rotating frame frequency
  * 
@@ -1350,7 +1350,7 @@ PModular::~PModular()
  * 
  * @param	right		the density matrix.
  * @param	time		the time of the time integration algorithm
- * @param	ret		the return value, only first processor gets it tough...
+ * @param	ret		    the return value, only first processor gets it tough...
  * @param	number		not needed here.
  * 
  */
@@ -1378,7 +1378,7 @@ PetscErrorCode PModular::Compute(Vec right,PetscReal time,PetscScalar * ret,Pets
  * 
  * @param	right		the density matrix.
  * @param	time		the time of the time integration algorithm
- * @param	global		the global return value, only first processor gets it tough...
+ * @param	ret		    the global return value, only first processor gets it tough...
  * @param	number		not needed here.
  * 
  */

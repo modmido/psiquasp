@@ -510,7 +510,7 @@ PetscErrorCode DistFile::MakeHeaderGen(std::string var)
  * 
  */
 
-PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename, MLSDim mlsdens)
+PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename, MLSDim * mlsdens)
 {
     PetscFunctionBeginUser;
     
@@ -529,7 +529,7 @@ PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename,
     
     length = mlsdist->PrintTotalNum();
     
-    ierr = AddElem(mlsdist,mlsdens.ToString() + " distribution"); CHKERRQ(ierr);
+    ierr = AddElem(mlsdist,mlsdens->ToString() + " distribution"); CHKERRQ(ierr);
     
     ierr = MakeHeaderTEV(); CHKERRQ(ierr);
     
@@ -550,7 +550,7 @@ PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename,
  * 
  */
 
-PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim mlspol, PetscInt number)
+PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim * mlspol, PetscInt number)
 {
     PetscFunctionBeginUser;
     
@@ -570,7 +570,7 @@ PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string fi
     
     length = mlsdist->PrintTotalNum();
     
-    ierr = AddElem(mlsdist,mlspol.ToString() + " offdiag " + convert.str() + " distribution"); CHKERRQ(ierr);
+    ierr = AddElem(mlsdist,mlspol->ToString() + " offdiag " + convert.str() + " distribution"); CHKERRQ(ierr);
     
     ierr = MakeHeaderTEV(); CHKERRQ(ierr);
     
@@ -584,8 +584,8 @@ PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string fi
 /**
  * @brief	Setup for the mode distribution file. This function has return type PetscErrorCode for Petsc error handling, which is why I prefer this instead of a constructor.
  * 
- * @param	system		the system specification object (polymorphic). Needed mainly for the header.
- * @param	mode		the name of the mode.
+ * @param	system		    the system specification object (polymorphic). Needed mainly for the header.
+ * @param	modenumber		the name of the mode.
  * 
  */
 
@@ -629,7 +629,7 @@ PetscErrorCode DistFile::SetupModeDistFile(System * system, std::string name, Pe
  * 
  */
 
-PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename, MLSDim mlsdens, std::string var)
+PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename, MLSDim * mlsdens, std::string var)
 {
     PetscFunctionBeginUser;
     
@@ -648,7 +648,7 @@ PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename,
     
     length = mlsdist->PrintTotalNum();
     
-    ierr = AddElem(mlsdist,mlsdens.ToString() + " distribution"); CHKERRQ(ierr);
+    ierr = AddElem(mlsdist,mlsdens->ToString() + " distribution"); CHKERRQ(ierr);
     
     ierr = MakeHeaderGen(var); CHKERRQ(ierr);
     
@@ -669,7 +669,7 @@ PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename,
  * 
  */
 
-PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim mlspol, PetscInt number, std::string var)
+PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim * mlspol, PetscInt number, std::string var)
 {
     PetscFunctionBeginUser;
     
@@ -691,7 +691,7 @@ PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string fi
     
     length = mlsdist->PrintTotalNum();
     
-    ierr = AddElem(mlsdist,mlspol.ToString() + " offdiag " + convert.str() + " distribution"); CHKERRQ(ierr);
+    ierr = AddElem(mlsdist,mlspol->ToString() + " offdiag " + convert.str() + " distribution"); CHKERRQ(ierr);
     
     ierr = MakeHeaderGen(var); CHKERRQ(ierr);
     

@@ -73,8 +73,8 @@ class OFile
   protected:
     std::list<PropBase*>	elements;			//!< The elements of the OFile. In case of observables and gnfcts there are generally a few, in case of distributions there is (should/makes sense) only one element. 
     std::list<std::string>	names;				//!< The names of the respective quantities, as written in the output file
-    std::string			fname;				//!< the name of the output file to be generated
-    FILE			*file;				//!< the FILE pointer
+    std::string			    fname;				//!< the name of the output file to be generated
+    FILE			        *file;				//!< the FILE pointer
     
   public:
     virtual ~OFile();								//make it virtual so that derived file classes can have a desructor as well
@@ -123,12 +123,12 @@ class DistFile: public OFile
     PetscErrorCode	PrintLine(Vec dm, PetscReal time);
     PetscErrorCode	PrintLineSteady(Vec dm, PetscReal param);
     
-    PetscErrorCode	SetupMLSDistFile(System * system, std::string filename, MLSDim mlsdens);
-    PetscErrorCode	SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim mlspol, PetscInt number);
+    PetscErrorCode	SetupMLSDistFile(System * system, std::string filename, MLSDim * mlsdens);
+    PetscErrorCode	SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim * mlspol, PetscInt number);
     PetscErrorCode	SetupModeDistFile(System * system, std::string filename, PetscInt modenumber);
 
-    PetscErrorCode	SetupMLSDistFile(System * system, std::string filename, MLSDim mlsdens, std::string var);
-    PetscErrorCode	SetupMLSOffdiagDistFile(System* system, std::string filename, MLSDim mlspol, PetscInt number, std::string var);
+    PetscErrorCode	SetupMLSDistFile(System * system, std::string filename, MLSDim * mlsdens, std::string var);
+    PetscErrorCode	SetupMLSOffdiagDistFile(System* system, std::string filename, MLSDim * mlspol, PetscInt number, std::string var);
     PetscErrorCode	SetupModeDistFile(System * system, std::string filename, PetscInt modename, std::string var);
 };
 
@@ -151,15 +151,15 @@ class DistFile: public OFile
 class Output
 {
   protected:
-    PetscInt		tev_steps_monitor;				//!< print every ... time step into the ouput file in case of time evolution
-    std::list<OFile*>	files;						//!< All output files of the program
+    PetscInt		    tev_steps_monitor;				//!< print every ... time step into the ouput file in case of time evolution
+    std::list<OFile*>	files;						    //!< All output files of the program
     
   public:
     virtual ~Output();
     Output();
-    PetscErrorCode		AddOFile(OFile * newfile);
+    PetscErrorCode		    AddOFile(OFile * newfile);
     static PetscErrorCode	TEVMonitor(TS ts,PetscInt n,PetscReal time,Vec dm,void* out);		//print a single line to each of the files
-    PetscErrorCode		SteadyStateMonitor(PetscReal param,Vec dm);
+    PetscErrorCode		    SteadyStateMonitor(PetscReal param,Vec dm);
     
     PetscInt			Steps() { return tev_steps_monitor; }					//return the tev_steps_monitor variable
 };
