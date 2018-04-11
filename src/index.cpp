@@ -241,26 +241,26 @@ PetscErrorCode Index::SetIndexFromQN(PetscInt* inqns)
       if( inqns[i] <= mlsdim_maxvalues[i] ) desired[i] = inqns[i];		//mls indices correspond to the qunatum numbers...
       else
       {
-	(*PetscErrorPrintf)("Requestet density matrix entry is not contained in the used excerpt of the density matrix!\n");
-	(*PetscErrorPrintf)("MLS dimension: %d, polarization %d; max value: %d, requested value: %d\n",i,mlsdim_pol[i],mlsdim_maxvalues[i],inqns[i]);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
-	break;
+          (*PetscErrorPrintf)("Requestet density matrix entry is not contained in the used excerpt of the density matrix!\n");
+          (*PetscErrorPrintf)("MLS dimension: %d, polarization %d; max value: %d, requested value: %d\n",i,mlsdim_pol[i],mlsdim_maxvalues[i],inqns[i]);
+          SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+          break;
       }
     }
     while( i < num_dims )							//get the mode indices
     {
       if( inqns[i] < blocksizes[i+1][0] && inqns[i+1] < blocksizes[i+1][0] && abs(inqns[i]-inqns[i+1]) < blocksizes[i][0] )
       {
-	desired[i+1] = inqns[i+1];						//this corresponds to blockindex[i]!
-	desired[i] = inqns[i] - MAX(0, desired[i+1]-blocksizes[i][0]+1);	//there is a little shift here
-	i += 2;
+          desired[i+1] = inqns[i+1];						//this corresponds to blockindex[i]!
+          desired[i] = inqns[i] - MAX(0, desired[i+1]-blocksizes[i][0]+1);	//there is a little shift here
+          i += 2;
       }
       else
       {
-	(*PetscErrorPrintf)("Requestet density matrix entry is not contained in the used excerpt of the density matrix!\n");
-	(*PetscErrorPrintf)("Mode dimension: %d, max value: %d, offidagonals: %d, requested values: |%d><%d|\n",i,blocksizes[i+1][0]-1,blocksizes[i][0]-1,inqns[i],inqns[i+1]);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
-	break;
+          (*PetscErrorPrintf)("Requestet density matrix entry is not contained in the used excerpt of the density matrix!\n");
+          (*PetscErrorPrintf)("Mode dimension: %d, max value: %d, offidagonals: %d, requested values: |%d><%d|\n",i,blocksizes[i+1][0]-1,blocksizes[i][0]-1,inqns[i],inqns[i+1]);
+          SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+          break;
       }
     }
     
@@ -696,7 +696,7 @@ Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt 
     //-----------------------------------------------------------------
     // Truncation: first call SetBlockZeros() and then upadate the global system sizes.
     //-----------------------------------------------------------------
-//    total_dof        = SetBlockZeros(dimlenghts);        //now the truncation procedure of the mls dimensions, return type is the total_dof
+    total_dof        = SetBlockZeros(dimlenghts);        //now the truncation procedure of the mls dimensions, return type is the total_dof
     
     //this step is a bit redundant here, but it provides a good sanity check
     PetscInt    check = 0;
@@ -711,33 +711,15 @@ Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt 
         PetscPrintf(PETSC_COMM_WORLD,"Error! Index setup messed up!\n");
     }
     
-    //count the new mls_dof values
-    PetscInt counter = 0;
-    PetscInt compare = mls_dof[N_D_MLS-1];
-    for(i=0; i < N_D_MLS; i++)
-    {
-        InitializeGlobal();
-        
-        while(ContinueMLS(i))
-        {
-            counter++;
-            Increment();
-        }
-        mls_dof[i] = counter;
-        counter = 0;
-    }
+    PetscInt    counter = 0;
+    PetscInt    factor = 1;
     
-    //sanity check
-    check = 0;
-    for(i=0; i < N_D_MLS-1; i++)
+    for(i=0; i<N_D_MLS; i++)
     {
-        check += mls_dof[i+1] % mls_dof[i];         //this should remain zero if everything works fine
-    }
-    if( compare != mls_dof[N_D_MLS-1] ) check++;   //this should be the same as before
-    
-    if(check)
-    {
-        PetscPrintf(PETSC_COMM_WORLD,"Error! Index setup messed up!\n");
+        for(j=0; j < blocksizes_max[multiMLS_start[i]]; j++) counter += blocksizes[multimls_start[i]][j];
+        factor      *= counter;
+        counter     = 0;
+        mls_dof[i]  = factor;
     }
 }
 
@@ -756,26 +738,54 @@ PetscInt Index::SetBlockZeros(PetscInt* dimlenghts)
     
     for(i=0; i < firstmodedim; i++)	mlsdim_maxvalues[i] = dimlenghts[i]-1;
     
-    InitializeGlobal();					    //initialize the index
-    
-    while( ContinueGlobal() )				//is it possible to continue?
+    if( N_D_MLS <= 1 )
     {
-      for(i=0; i < firstmodedim; i++)
-      {
-          if( indices[i] >= dimlenghts[i] )
-          {
-              blocksizes[0][blockindices[0]] = 0;	//if a single one of the indices exceeds the allowed dimlength, set the corresponding block size to zero
-          }
-      }
-      Increment();					        //increment the index by one
+        InitializeGlobal();                        //initialize the index
+        
+        while( ContinueGlobal() )				//is it possible to continue?
+        {
+            for(i=0; i < firstmodedim; i++)
+            {
+                if( indices[i] >= dimlenghts[i] )
+                {
+                    blocksizes[0][blockindices[0]] = 0;	//if a single one of the indices exceeds the allowed dimlength, set the corresponding block size to zero
+                }
+            }
+            Increment();					        //increment the index by one
+        }
+        
+        ret=0;						            //count the new number of mls dofs
+        InitializeGlobal();					    //by starting at the beginning
+        while( ContinueGlobal() )			    //and doing it the brute force way, too lazy to come up with something fancy
+        {
+            ret++;
+            Increment();
+        }
     }
-    
-    ret=0;						            //count the new number of mls dofs
-    InitializeGlobal();					    //by starting at the beginning
-    while( ContinueGlobal() )			    //and doing it the brute force way, too lazy to come up with something fancy
+    else
     {
-      ret++;
-      Increment();
+        InitializeGlobal();                         //initialize the index
+        
+        while( ContinueGlobal() )                   //is it possible to continue?
+        {
+            for(i=0; i < firstmodedim; i++)
+            {
+                if( indices[i] >= dimlenghts[i] )
+                {
+                    PetscInt type = GetType(i);
+                    blocksizes[multiMLS_start[type]][blockindices[multiMLS_start[type]]] = 0;    //if a single one of the indices exceeds the allowed dimlength, set the corresponding block size to zero
+                }
+            }
+            Increment();                            //increment the index by one
+        }
+        
+        ret=0;                                    //count the new number of mls dofs
+        InitializeGlobal();                        //by starting at the beginning
+        while( ContinueGlobal() )                //and doing it the brute force way, too lazy to come up with something fancy
+        {
+            ret++;
+            Increment();
+        }
     }
     
     return	ret;					//new number of mls dofs...

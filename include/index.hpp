@@ -145,14 +145,15 @@ public:
     PetscErrorCode	PrintMLSDimMaxValues();				//Print the dim_maxvalues array into stdout
     PetscErrorCode	PrintGenInfos();
     
-    PetscInt		LocStart()		    { return loc_start; }			//!< Return the local start value of the index
-    PetscInt		LocEnd()		    { return loc_end; }	    		//!< Return the position of one past the local end of the index
-    PetscInt		TotalDOF()		    { return total_dof; }			//!< Return the total number of density matrix elements
-    PetscInt		NumDims()		    { return num_dims; }			//!< Return the total number of dimensions
-    PetscInt		DMIndex()		    { return dmindex; }		    	//!< Return the dmindex
-    PetscInt		MLSIndex()		    { return mlsindex; }			//!< Return the position in the current mls subblock
-    PetscInt		MLSDims()		    { return firstmodedim; }		//!< Return the number of the first mode dimension, which is also the total number of mls dimensions
-    PetscInt		NMls(PetscInt i)	{ return NMLS[i]; }			    //!< Return the number of mls
+    PetscInt		LocStart()		        { return loc_start; }			//!< Return the local start value of the index
+    PetscInt		LocEnd()		        { return loc_end; }	    		//!< Return the position of one past the local end of the index
+    PetscInt		TotalDOF()		        { return total_dof; }			//!< Return the total number of density matrix elements
+    PetscInt		NumDims()		        { return num_dims; }			//!< Return the total number of dimensions
+    PetscInt		DMIndex()		        { return dmindex; }		    	//!< Return the dmindex
+    PetscInt		MLSIndex()		        { return mlsindex; }			//!< Return the position in the current mls subblock
+    PetscInt		MLSDims()		        { return firstmodedim; }		//!< Return the number of the first mode dimension, which is also the total number of mls dimensions
+    PetscInt		NMls(PetscInt i)	    { return NMLS[i]; }			    //!< Return the number of mls
+    PetscInt        MlsStart(PetscInt i)    { return multiMLS_start[i]; }   //!< Return the number of mls
 };
 
 
@@ -656,7 +657,15 @@ inline void Index::IncrementInternalMultiMLS()
             break;
         }
     }
-    if( !isend ) if( !blocksizes[0][blockindices[0]] ) IncrementInternal();    //if the current block in dim 0 has blocksize zero, do it again, because there is no allowed entry here, due to truncation
+    if( !isend )        //if the current block in dim 0 has blocksize zero, do it again, because there is no allowed entry here, due to truncation
+    {
+        PetscInt    check = 0;
+        for(i=0;i<N_D_MLS;i++)
+        {
+            if( !blocksizes[multiMLS_start[i]][blockindices[multiMLS_start[i]]] ) check++;
+        }
+        if(check)   IncrementInternalMultiMLS();
+    }
 }
 
 
@@ -1287,7 +1296,7 @@ inline PetscInt Index::IsModeOneDimFirstRightOffdiag(PetscInt dim)
 
 
 /**
- * @brief    Returns the mls type number of a given mls dimension i.
+ * @brief    Returns the mls type number of a given mls dimension i. Does not work for mode dimensions! Be careful!
  *
  * @param    dim    the mls dimension to be checked.
  *

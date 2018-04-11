@@ -133,8 +133,12 @@ PetscInt MLSDim::IsEqual(Dim * input)
 {
     MLSDim	*ptr = dynamic_cast<MLSDim*> (input);
     
-    if( ptr && ket == ptr->ket && bra == ptr->bra )	return 1;
-    else						                    return 0;
+    if(ptr)
+    {
+        if( ket == ptr->ket && bra == ptr->bra )        return 1;
+        else                                            return 0;
+    }
+    else						                        return 0;
 }
 
 

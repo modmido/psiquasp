@@ -1438,7 +1438,7 @@ PetscErrorCode System::DMWritePureState(Vec dm, PetscInt * indices)
     {
       if ( index->IsLocal() )								//if the index is local we may set the density matrix
       {
-	ierr = VecSetValue(dm,index->DMIndex(),1.0,INSERT_VALUES); CHKERRQ(ierr);	//write a 1 into the corresponding slot
+          ierr = VecSetValue(dm,index->DMIndex(),1.0,INSERT_VALUES); CHKERRQ(ierr);	//write a 1 into the corresponding slot
       }
     
       ierr = VecAssemblyBegin(dm);CHKERRQ(ierr);					//assemble the parallel vector
