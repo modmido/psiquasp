@@ -302,13 +302,36 @@ PetscErrorCode	System::AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, Pets
     PetscErrorCode	ierr;
     
     
+    //some pointer arithmetic for making the polymorphism work
+    MultiMLSDim *ptr1 = dynamic_cast<MultiMLSDim*> (polname);
+    MLSDim      *ptr2 = dynamic_cast<MLSDim*> (polname);
+    MLSDim      *pol2name;
+    
+    if( !ptr1 && ptr2 )             //means that it is a MLSDim object
+    {
+        MLSDim  * ptr = new MLSDim (polname->bra,polname->ket);
+        pol2name = ptr;
+    }
+    else if( ptr1 )                 //means that it is a MultiMLSDim object
+    {
+        MultiMLSDim  * ptr = new MultiMLSDim (polname->bra,polname->ket,polname->mlsTypeNumber);
+        pol2name = ptr;
+    }
+    else
+    {
+        (*PetscErrorPrintf)("Error: Input object is neither MLSDim nor MultiMLSDim!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    
+    
     //finding the dimensions  
     PetscInt	pol1=0, pol2=0;
-    MLSDim	    pol2name = polname->Swap(*polname);
     
     ierr = FindMatch(polname,&pol1); CHKERRQ(ierr);
-    ierr = FindMatch(&pol2name,&pol2); CHKERRQ(ierr);
-       
+    ierr = FindMatch(pol2name,&pol2); CHKERRQ(ierr);
+    
+    delete pol2name;
+    
 
     //loop part  
     PetscInt	locindex;
@@ -319,12 +342,12 @@ PetscErrorCode	System::AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, Pets
     
     while ( index->ContinueLocal() )					//loop over all local rows
     {
-      if(!choose)							//preallocation mode
+      if(!choose)							            //preallocation mode
       {
           d_count++;
           d_nnz[locindex - index->LocStart()]++;
       }
-      else								//MatSetValue mode
+      else								                //MatSetValue mode
       {
           value	= couplingconst*((PetscScalar) (index->MLSQN(pol1)-index->MLSQN(pol2)));
           ierr	= MatSetValue(AA,locindex,locindex,value,ADD_VALUES); CHKERRQ(ierr);
@@ -405,6 +428,7 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
       {
           if ( index->CanDecrement(down) && index->CanIncrement(up) && index->CanDecrement(modedim) )	//element fulfills requirements
           {
+              
               column	= locindex + index->MLSCPitch(down,up) + index->ModeDPitch(modedim);
               if(!choose)										        //preallocation mode
               {
@@ -494,32 +518,32 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
               }
           }
           
-          if ( index->CanDecrement(up) && index->CanIncrement(modedim) )				//element fulfills requirements, we do not truncate the ground state density dof...
+          if ( index->CanDecrement(up) && index->CanIncrement(modedim) )                //element fulfills requirements, we do not truncate the ground state density dof...
           {
-              column	= locindex + index->MLSDPitch(up) + index->ModeIPitch(modedim);
-              if(!choose)										//preallocation mode
+              column    = locindex + index->MLSDPitch(up) + index->ModeIPitch(modedim);
+              if(!choose)                                        //preallocation mode
               {
-                  if( index->IsLocal(column)  )							//local element
+                  if( index->IsLocal(column)  )                            //local element
                   {
                       d_count++;
                       d_nnz[locindex - index->LocStart()]++;
                   }
-                  else										//nonlocal element
+                  else                                        //nonlocal element
                   {
                       o_count++;
                       o_nnz[locindex - index->LocStart()]++;
                   }
               }
-              else											//MatSetValue mode
+              else                                            //MatSetValue mode
               {
                   if( column >= index->TotalDOF() )
                   {
-                      ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)+1,(mlsup->ToString()).c_str(),index->Indices(up)-1,(photon.ToString()).c_str(),index->Indices(modedim)+1);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d mode pitch = %d\n",locindex,index->MLSDPitch(up),index->ModeIPitch(modedim));
+                      ierr    = index->PrintIndices(); CHKERRQ(ierr);
+                      ierr    = PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)+1,(mlsup->ToString()).c_str(),index->Indices(up)-1,(photon.ToString()).c_str(),index->Indices(modedim)+1);
+                      ierr    = PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d mode pitch = %d\n",locindex,index->MLSDPitch(up),index->ModeIPitch(modedim));
                   }
-                  value	= couplingconst*PetscSqrtReal((PetscReal) (mvalue+1))*((PetscScalar) (n00+1));
-                  ierr	= MatSetValue(AA,locindex,column,value,ADD_VALUES); CHKERRQ(ierr);
+                  value    = couplingconst*PetscSqrtReal((PetscReal) (mvalue+1))*((PetscScalar) (n00+1));
+                  ierr    = MatSetValue(AA,locindex,column,value,ADD_VALUES); CHKERRQ(ierr);
               }
           }
       }
@@ -894,7 +918,7 @@ PetscErrorCode	System::AddModeCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nn
     
     //finding the dimensions
     PetscInt	mode;
-    ModeDim	modedim (0,modenumber);
+    ModeDim	    modedim (0,modenumber);
     
     ierr = FindMatch(&modedim,&mode); CHKERRQ(ierr);
     
@@ -1116,9 +1140,13 @@ PetscErrorCode	System::AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * 
           }
           
           n00 = index->MLSQN(n00dim);
+          
+//          PetscPrintf(PETSC_COMM_WORLD,"n00: %d, start: %d, goal: %d, index->MLSQN(start): %d\n",n00,start,goal,index->MLSQN(start));
+          
           if ( n00 > 0 && index->CanIncrement(start) )
           {
               column	= locindex + index->MLSIPitch(start);
+              
               if(!choose)							//preallocation mode
               {
                   if( index->IsLocal(column)  )				//local element
@@ -1309,7 +1337,7 @@ PetscErrorCode	System::AddLindbladMode(Mat AA, PetscInt * d_nnz, PetscInt * o_nn
     
     //finding the dimensions
     PetscInt	mode;
-    ModeDim	modedim (0,modenumber);
+    ModeDim	    modedim (0,modenumber);
     
     ierr = FindMatch(&modedim,&mode); CHKERRQ(ierr);
     
@@ -1406,7 +1434,7 @@ PetscErrorCode	System::AddLindbladModeThermal(Mat AA, PetscInt * d_nnz, PetscInt
     
     //finding the dimensions
     PetscInt	mode;
-    ModeDim	modedim (0,modenumber);
+    ModeDim	    modedim (0,modenumber);
     
     ierr = FindMatch(&modedim,&mode); CHKERRQ(ierr);
     

@@ -5,8 +5,11 @@
 - seems like i implemented the add dimension functionality, needs to be checked
 - seems like i  implemented the index constructor for multi mls types, needs to be checked
 - seems like i rewrote all the pitch  in the manner n00_1 -> -1 n00_2 -> -2 ...  keept the dim number interface, needs to be tested
-- seems like i rewrote the whole liouville thing, needs to be tested
+- seems like i rewrote the whole liouville and output thing, needs to be tested
+- compiles
+- index routine somehow runs but produces nonesense
 
+- need to write index nlevels support, meaningful output functions for multi mls usage
 - then for the whole output thing one sanity check that the mls dim objects refer to the same mls type and generalized n00 functionality
 - need to compile and debug
 - need to write a first complete example

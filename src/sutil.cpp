@@ -34,7 +34,8 @@ System::System ()
     num_modes		= 0;
     loc_size		= 0;
     N_D_MLS		    = 0;
-    useMulti        = 1;        //used for sanity check
+    useMulti        = 0;        //used for sanity check
+    useSingle       = 0;
     
     parallel_layout	= 0;
     modesetup		= 0;
@@ -70,7 +71,7 @@ System::~System()
 //-------------------------------------------------------------------------------------------------
 
 #undef __FUNCT__
-#define __FUNCT__ "MLSAddMulti"
+#define __FUNCT__ "MLSAdd"
 
 /**
  * @brief    Adds a single type of mls. Only used when one type of mls is used.
@@ -83,12 +84,12 @@ PetscErrorCode System::MLSAdd(PetscInt nmls)
 {
     PetscFunctionBeginUser;
     
-    if ( useMulti == 0 )             // has there been a prior call to MLSAdd?
+    if ( useSingle == 1 )             // has there been a prior call to MLSAdd?
     {
         (*PetscErrorPrintf)("Mutliple calls to MLSAdd() are not allowed. Use MLSAddMulti() for different types of MLS!\n");
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
-    else if( N_D_MLS > 0 )           // is there already another type of mls set?
+    else if( useMulti == 1 || N_D_MLS > 0 )          // is there already another type of mls set?
     {
         (*PetscErrorPrintf)("Cannot mix MLSAdd() and MLSAddMulti() function calls!\n");
         (*PetscErrorPrintf)("If you want to use multiple mls types use MLSAddMulti() only!\n");
@@ -102,7 +103,7 @@ PetscErrorCode System::MLSAdd(PetscInt nmls)
     else
     {
         N_MLS[N_D_MLS]          = nmls;
-        useMulti                = 0;
+        useSingle               = 1;
         N_D_MLS++;
     }
     
@@ -124,13 +125,13 @@ PetscErrorCode System::MLSAddMulti(PetscInt nmls)
 {
     PetscFunctionBeginUser;
     
-    if(N_D_MLS == MAX_D_MLS)        //is the allowed maximum of different mls reached?
+    if( N_D_MLS == MAX_D_MLS )        //is the allowed maximum of different mls reached?
     {
         (*PetscErrorPrintf)("Maximum number of different MLS types reached!\n");
         (*PetscErrorPrintf)("If you need to use more different types of mls then increase the MAX_D_MLS preprocessor constant in system.hpp.\n");
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MAX_VALUE,"");
     }
-    else if( N_D_MLS > 0 )          //has there been a prior call to MLSAdd
+    else if( useMulti == 1 || N_D_MLS > 0 )             // has there been a prior call to MLSAddMulti()
     {
         if ( multiMLS_start[N_D_MLS-1] == num_dims )    // are there two consecutive calls to MLSAdd without adding any dimensions in between?
         {
@@ -138,20 +139,27 @@ PetscErrorCode System::MLSAddMulti(PetscInt nmls)
             (*PetscErrorPrintf)("Maybe you have forgotten to add the MLS dimensions. Or remove one call to MLSAddMulti().\n");
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MAX_VALUE,"");
         }
-        if ( modesetup )    // have there been already calls to ModeAdd()? Not allowed!
+        if ( modesetup )                                // have there been already calls to ModeAdd()? Not allowed!
         {
             (*PetscErrorPrintf)("Cannot mix MLS and Mode dimension setup functions!\n");
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
         }
-        if( useMulti == 0 )
+        if( useSingle == 1 )
         {
             (*PetscErrorPrintf)("Cannot mix MLSAdd() and MLSAddMulti() function calls!\n");
             (*PetscErrorPrintf)("If you want to use multiple mls types use MLSAddMulti() only!\n");
             SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
         }
+        else                                        //everything seems to be legit, so proceed
+        {
+            N_MLS[N_D_MLS]          = nmls;         //maximum number of mls for this type
+            multiMLS_start[N_D_MLS] = num_dims;     //the index of the first dimension for this kind
+            N_D_MLS++;                              //raise the number of different types by one
+        }
     }
-    else                            //everything seems to be legit, so proceed
+    else                                        //everything seems to be legit, so proceed
     {
+        useMulti                = 1;
         N_MLS[N_D_MLS]          = nmls;         //maximum number of mls for this type
         multiMLS_start[N_D_MLS] = num_dims;     //the index of the first dimension for this kind
         N_D_MLS++;                              //raise the number of different types by one
@@ -663,8 +671,8 @@ PetscErrorCode System::Energies(PetscInt n,PetscReal *ret)
     }
     else
     {
-      (*PetscErrorPrintf)("System::Energies() error. The dimension number is too large! dim number = %d, num dims = %d \n",n,dimensions.size());
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        (*PetscErrorPrintf)("System::Energies() error. The dimension number is too large! dim number = %d, num dims = %d \n",n,dimensions.size());
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
     
     PetscFunctionReturn(0);

@@ -364,16 +364,44 @@ PetscErrorCode	Gnfct::MLSNormalorderedExpecationvalue(System * sys, PetscInt ord
     PetscErrorCode	ierr;
     
     
+    //some pointer arithmetic for making the polymorphism work
+    MultiMLSDim *ptr1 = dynamic_cast<MultiMLSDim*> (mlspol1_name);
+    MLSDim      *ptr2 = dynamic_cast<MLSDim*> (mlspol1_name);
+    
+    MLSDim      *mlspol2_name,*mlsdens1_name,*mlsdens2_name;
+    
+    if( !ptr1 && ptr2 )             //means that it is a MLSDim object
+    {
+        MLSDim  * ptr1  = new MLSDim (mlspol1_name->bra,mlspol1_name->ket);
+        MLSDim  * ptr2  = new MLSDim (1,*mlspol1_name);
+        MLSDim  * ptr3  = new MLSDim (0,*mlspol1_name);
+        mlspol2_name    = ptr1;
+        mlsdens1_name   = ptr2;
+        mlsdens2_name   = ptr3;
+    }
+    else if( ptr1 )                 //means that it is a MultiMLSDim object
+    {
+        MultiMLSDim  * ptr1 = new MultiMLSDim (mlspol1_name->bra,mlspol1_name->ket,mlspol1_name->mlsTypeNumber);
+        MultiMLSDim  * ptr2 = new MultiMLSDim (1,*ptr1);
+        MultiMLSDim  * ptr3 = new MultiMLSDim (0,*ptr1);
+        mlspol2_name    = ptr1;
+        mlsdens1_name   = ptr2;
+        mlsdens2_name   = ptr3;
+    }
+    else
+    {
+        (*PetscErrorPrintf)("Error: Input object is neither MLSDim nor MultiMLSDim!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    
+    
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0, pol1 = 0, pol2 = 0;
-    MLSDim		    mlspol2_name = mlspol1_name->Swap(*mlspol1_name);		//swap constructor
-    MLSDim		    mlsdens1_name (1,*mlspol1_name);
-    MLSDim		    mlsdens2_name (0,*mlspol1_name);
     
-    ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens1_name,&dens1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlsdens2_name,&dens2); CHKERRQ(ierr);
     ierr = sys->FindMatch(mlspol1_name,&pol1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(&mlspol2_name,&pol2); CHKERRQ(ierr);
+    ierr = sys->FindMatch(mlspol2_name,&pol2); CHKERRQ(ierr);
 
 
     //multi mls functionality

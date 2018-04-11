@@ -198,9 +198,10 @@ inline PetscInt Index::MLSIPitch(PetscInt dim)
     }
     else
     {
-        if(dim)
+        PetscInt type = GetType(dim);
+        
+        if( dim - multiMLS_start[type] )
         {
-            PetscInt type = GetType(dim);
             PetscInt    i = dim-1,j,pitch = 0;
             
             upper = blocksizes[i][blockindices[i]];
@@ -215,9 +216,8 @@ inline PetscInt Index::MLSIPitch(PetscInt dim)
                 pitch = 0;
                 i--;
             }
-            
-            if(type) upper *= mls_dof[type-1];                          //multiply times the dofs of all preceding mls types
         }
+        if(type) upper *= mls_dof[type-1];                              //multiply times the dofs of all preceding mls types
     }
     
     return	ret*upper;
@@ -257,9 +257,10 @@ inline PetscInt Index::MLSDPitch(PetscInt dim)
     }
     else
     {
-        if(dim)
+        PetscInt type = GetType(dim);
+        
+        if( dim - multiMLS_start[type] )
         {
-            PetscInt type = GetType(dim);
             PetscInt    i = dim-1,j,pitch = 0;
             
             upper = blocksizes[i][blockindices[i]-1];
@@ -275,6 +276,7 @@ inline PetscInt Index::MLSDPitch(PetscInt dim)
                 i--;
             }
         }
+        if(type) upper *= mls_dof[type-1];                              //multiply times the dofs of all preceding mls types
     }
     
     return	-ret*upper;
@@ -301,7 +303,8 @@ inline PetscInt Index::MLSCPitch(PetscInt down, PetscInt up)
     {
         if(down)		//start with downward pitch
         {
-            PetscInt	i = down-1,j,pitch = 0;
+            i = down-1;
+            PetscInt	j,pitch = 0;
             
             newblockindices[i]	= blockindices[i]-1;			                //this is said position, where the decrement pitch leads to
             upper			    = blocksizes[i][blockindices[i]-1];	            //
@@ -321,7 +324,8 @@ inline PetscInt Index::MLSCPitch(PetscInt down, PetscInt up)
         
         if(up)
         {
-            PetscInt	i = up-1,j,pitch = 0;
+            i = up-1;
+            PetscInt	j,pitch = 0;
             
             upper2 = blocksizes[i][newblockindices[i]];                         //which is used as start for the increment pitch
             
@@ -341,12 +345,13 @@ inline PetscInt Index::MLSCPitch(PetscInt down, PetscInt up)
     {
         PetscInt type = GetType(down);
         
-        if(down)        //start with downward pitch
+        if( down-multiMLS_start[type] )        //start with downward pitch
         {
-            PetscInt    i = down-1,j,pitch = 0;
+            i = down-1;
+            PetscInt    j,pitch = 0;
             
-            newblockindices[i]    = blockindices[i]-1;                            //this is said position, where the decrement pitch leads to
-            upper            = blocksizes[i][blockindices[i]-1];                  //
+            newblockindices[i]  = blockindices[i]-1;                            //this is said position, where the decrement pitch leads to
+            upper               = blocksizes[i][blockindices[i]-1];             //
             
             while( i > multiMLS_start[type] )
             {
@@ -361,9 +366,10 @@ inline PetscInt Index::MLSCPitch(PetscInt down, PetscInt up)
             }
         }
         
-        if(up)
+        if( up-multiMLS_start[type] )
         {
-            PetscInt    i = up-1,j,pitch = 0;
+            i = up-1;
+            PetscInt    j,pitch = 0;
             
             upper2 = blocksizes[i][newblockindices[i]];                         //which is used as start for the increment pitch
             
@@ -377,6 +383,11 @@ inline PetscInt Index::MLSCPitch(PetscInt down, PetscInt up)
                 pitch = 0;
                 i--;
             }
+        }
+        if(type)
+        {
+            upper *= mls_dof[type-1];                              //multiply times the dofs of all preceding mls types
+            upper2 *= mls_dof[type-1];
         }
     }
 
@@ -503,7 +514,7 @@ inline PetscInt Index::Increment()
     dmindex++;
     
     mlsindex++;					                        //seems quite simple
-    if( mlsindex == mls_dof[N_D_MLS] )	mlsindex = 0;	//
+    if( mlsindex == mls_dof[N_D_MLS-1] )	mlsindex = 0;	//
     
     if( N_D_MLS <= 1 )          IncrementInternal();          //one or zero types of mls
     else                        IncrementInternalMultiMLS();  //more types of mls
@@ -586,6 +597,7 @@ inline void Index::IncrementInternalMultiMLS()
     indices[0]++;
     i = 0;
     k = 1;
+    
     while( indices[i] >= blocksizes[i][blockindices[i]] )
     {
         if( i < firstmodedim-1 )            //increment mls dim values
@@ -733,21 +745,21 @@ inline PetscInt Index::CanIncrement(PetscInt dim)
     {
       if( (mlsdim_maxvalues[dim] != indices[dim]) )						//mls dims: quantum number is not maximal
       {
-	ret++;
-	goto stop;
+          ret++;
+          goto stop;
       }
     }
     else
     {
       if( !((dim-firstmodedim)%2) && indices[dim] < blocksizes[dim][blockindices[dim]]-1 )	//mode dims
       {
-	ret++;
-	goto stop;
+          ret++;
+          goto stop;
       }
       else if( indices[dim] < blocksizes[dim][blockindices[dim]]-1 && (indices[dim-1] != 0 || blockindices[dim-1] < blocksizes[dim-1][0]-1 ) )
       {
-	ret++;
-	goto stop;
+          ret++;
+          goto stop;
       }
     }
     
@@ -771,33 +783,34 @@ inline PetscInt Index::CanDecrement(PetscInt dim)
     {
       if( indices[dim] )
       {
-	ret++;
-	goto stop;
+          ret++;
+          goto stop;
       }
     }
     else
     {
       if( !((dim-firstmodedim)%2) )
       {
-	if( indices[dim] )
-	{
-	  ret++;
-	  goto stop;
-	}
+          if( indices[dim] )
+          {
+              ret++;
+              goto stop;
+          }
       }
       else
       {
-	if( indices[dim] && !(indices[dim] < blocksizes[dim][0] - blocksizes[dim-1][0] + 1 && indices[dim-1] == blocksizes[dim-1][blockindices[dim-1]]-1) )
-	{
-	  ret++;
-	  goto stop;
-	}
-	else if( indices[dim] < blocksizes[dim][0] - blocksizes[dim-1][0] + 1 )
-	{
-	  
-	}
+          if( indices[dim] && !(indices[dim] < blocksizes[dim][0] - blocksizes[dim-1][0] + 1 && indices[dim-1] == blocksizes[dim-1][blockindices[dim-1]]-1) )
+          {
+              ret++;
+              goto stop;
+          }
+          else if( indices[dim] < blocksizes[dim][0] - blocksizes[dim-1][0] + 1 )
+          {
+              //TODO: check if this is right
+          }
       }
     }
+    
     stop:
     return	ret;
 }
@@ -1284,7 +1297,14 @@ inline PetscInt Index::GetType(PetscInt dim)
 {
     PetscInt type = 0;
     
-    while ( dim < multiMLS_start[type+1] ) type++;
+    if( dim >= 0 )
+    {
+        while ( dim >= multiMLS_start[type+1] ) type++;
+    }
+    else
+    {
+        type = -(dim+1);
+    }
     
     return type;
 }

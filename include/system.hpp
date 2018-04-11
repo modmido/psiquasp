@@ -163,19 +163,21 @@ class System
     PetscInt		N_MLS[MAX_D_MLS] = {};		        //!< total number of mls
     PetscInt        N_D_MLS;                            //!< total number of different mls
     PetscInt        multiMLS_start[MAX_D_MLS] = {};     //!< the index of the frist dimension of the mls kind in the indices array
-    PetscInt        useMulti;                           //!< used for sanity check so that MLSAdd and MLSAddMulti are not mixed!
     PetscInt		num_dims;			                //!< how many dimensions in total
     PetscInt		num_mlsdims;			            //!< how many mls dimensions
     PetscInt		num_mlsdens;			            //!< how many mls density degrees of freedom
     PetscInt		num_modes;			                //!< how many bosonic modes
     PetscInt		loc_size;			                //!< how many local dm entries?
+    
+    PetscInt        useMulti;                           //!< used for sanity check so that MLSAdd and MLSAddMulti are not mixed!
+    PetscInt        useSingle;                          //!< used for sanity check so that MLSAdd and MLSAddMulti are not mixed!
 
-    std::list<Dim*>	dimensions;			//!< name of the dim
+    std::list<Dim*>	dimensions;			                //!< name of the dim
 
 
     //sanity check flags
-    PetscInt		parallel_layout;		    //!< checks whether local distribution has already been set or not, is 0 if not, 1 if yes
-    PetscInt		modesetup;			        //!< checks whether the user has already set a mode dimension, produces error messages if the MLS and mode dimension setup functions are mixed
+    PetscInt		parallel_layout;		            //!< checks whether local distribution has already been set or not, is 0 if not, 1 if yes
+    PetscInt		modesetup;			                //!< checks whether the user has already set a mode dimension, produces error messages if the MLS and mode dimension setup functions are mixed
 
 
   //-----------------------------------------------------------------

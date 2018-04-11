@@ -294,7 +294,7 @@ PetscErrorCode Index::PrintGenInfos()
       ierr = PetscPrintf(PETSC_COMM_WORLD,"mode %d: maximum number state order %d, maximum number of offidagonals %d\n",(i-firstmodedim)/2,blocksizes[i+1][0]-1,blocksizes[i][0]-1); CHKERRQ(ierr);
       i += 2;
     }
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"\ntotal degrees of freedom: %d\n",total_dof); CHKERRQ(ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"\ntotal degrees of freedom: %d, mls degrees of freedom: %d\n",total_dof,mls_dof[0]); CHKERRQ(ierr); //TODO: make this meaninful for multi mls
     
     ierr = PrintBlockSizes(); CHKERRQ(ierr);
     
@@ -527,7 +527,7 @@ Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt 
     N_D_MLS         = n_d_mls;                               //number of different MLS types
     
     PetscInt    *loc_multistart = new PetscInt [N_D_MLS+1];                     //the index of the first dimension of each mls type
-    for(i=0; i < N_D_MLS; i++) loc_multistart[i]   = multiMLS_start[i];         //only needed for multi mls type usage
+    for(i=0; i < N_D_MLS; i++) loc_multistart[i]   = multimls_start[i];         //only needed for multi mls type usage
     loc_multistart[N_D_MLS]     = firstmodedim;                                 //
     multiMLS_start              = loc_multistart;                               //
     
@@ -560,21 +560,22 @@ Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt 
     //set the values for the mls dims
     for(i=0; i < N_D_MLS; i++)
     {
-        for(j=multiMLS_start[i]; j < multiMLS_start[i+1];j++)
+        for(j=0; j < multiMLS_start[i+1]-multiMLS_start[i];j++)
         {
-            blocksizes_max[i]       = BinomDim(NMLS[i],multiMLS_start[i+1]-1-i);           //the number of blocks is given by the binomial coefficient, which is neat
-            blocksizes[i]           = new PetscInt [blocksizes_max[i]];                    //allocate the respective number of entries in the blocksizes array
+            blocksizes_max[j+multiMLS_start[i]]       = BinomDim(NMLS[i],multiMLS_start[i+1]-multiMLS_start[i]-1-j);           //the number of blocks is given by the binomial coefficient, which is neat
+            blocksizes[j+multiMLS_start[i]]           = new PetscInt [blocksizes_max[j+multiMLS_start[i]]];                    //allocate the respective number of entries in the blocksizes array
         }
     }
     
+    i = firstmodedim;
     //set the values for the mode dims
     while( i < num_dims )
     {
-        blocksizes_max[i]    = modedimlengths[i-firstmodedim];            //fixed number of blocks for the first dim
-        blocksizes[i]    = new PetscInt [blocksizes_max[i]];
+        blocksizes_max[i]       = modedimlengths[i-firstmodedim];            //fixed number of blocks for the first dim
+        blocksizes[i]           = new PetscInt [blocksizes_max[i]];
         i++;
-        blocksizes_max[i]    = 1;                                         //and a single block for the second dim
-        blocksizes[i]    = new PetscInt [blocksizes_max[i]];
+        blocksizes_max[i]       = 1;                                         //and a single block for the second dim
+        blocksizes[i]           = new PetscInt [blocksizes_max[i]];
         i++;
     }
     
@@ -588,18 +589,18 @@ Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt 
     PetscInt    k,l,count;
     for(i=0; i < N_D_MLS; i++)
     {
-        blocksizes[multiMLS_start[i+1]-1][0] = NMLS[i] + 1;       //for the last mls dimension there is only one block, given by the lowest order binomial coefficient (NMLS+1 over NMLS)
+        blocksizes[multiMLS_start[i+1]-1][0] = NMLS[i] + 1;                 //for the last mls dimension there is only one block, given by the lowest order binomial coefficient (NMLS+1 over NMLS)
     
         //from the untruncated last blocksize we can iteratively generate the blocksizes of the preceding dimensions.
-        for(j=multiMLS_start[i+1]-2; j >= 0 ; j--)                         //for every mls dimenstion starting from the second last
+        for(j=multiMLS_start[i+1]-2; j >= multiMLS_start[i] ; j--)          //for every mls dimenstion starting from the second last
         {
             count = 0;
-            for(k=0; k < blocksizes_max[j+1]; k++)                    //take all the blocksizes of the following dimension
+            for(k=0; k < blocksizes_max[j+1]; k++)                          //take all the blocksizes of the following dimension
             {
                 l = 0;
-                while( blocksizes[j+1][k]-l > 0 )                    //lower them by one until they are zero
+                while( blocksizes[j+1][k]-l > 0 )                           //lower them by one until they are zero
                 {
-                    blocksizes[j][count]    = blocksizes[j+1][k]-l;                //and write all possible results into the current blocksizes dimension
+                    blocksizes[j][count]    = blocksizes[j+1][k]-l;         //and write all possible results into the current blocksizes dimension
                     l++;
                     count++;
                 }
@@ -695,7 +696,7 @@ Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt 
     //-----------------------------------------------------------------
     // Truncation: first call SetBlockZeros() and then upadate the global system sizes.
     //-----------------------------------------------------------------
-    total_dof        = SetBlockZeros(dimlenghts);        //now the truncation procedure of the mls dimensions, return type is the total_dof
+//    total_dof        = SetBlockZeros(dimlenghts);        //now the truncation procedure of the mls dimensions, return type is the total_dof
     
     //this step is a bit redundant here, but it provides a good sanity check
     PetscInt    check = 0;
@@ -715,6 +716,8 @@ Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt 
     PetscInt compare = mls_dof[N_D_MLS-1];
     for(i=0; i < N_D_MLS; i++)
     {
+        InitializeGlobal();
+        
         while(ContinueMLS(i))
         {
             counter++;
@@ -757,13 +760,19 @@ PetscInt Index::SetBlockZeros(PetscInt* dimlenghts)
     
     while( ContinueGlobal() )				//is it possible to continue?
     {
-      for(i=0; i < firstmodedim; i++)	if( indices[i] >= dimlenghts[i] )	blocksizes[0][blockindices[0]] = 0;	//if a single one of the indices exceeds the allowed dimlength, set the corresponding block size to zero
+      for(i=0; i < firstmodedim; i++)
+      {
+          if( indices[i] >= dimlenghts[i] )
+          {
+              blocksizes[0][blockindices[0]] = 0;	//if a single one of the indices exceeds the allowed dimlength, set the corresponding block size to zero
+          }
+      }
       Increment();					        //increment the index by one
     }
     
-    ret=0;						        //count the new number of mls dofs
-    InitializeGlobal();					//by starting at the beginning
-    while( ContinueGlobal() )			//and doing it the brute force way, too lazy to come up with something fancy
+    ret=0;						            //count the new number of mls dofs
+    InitializeGlobal();					    //by starting at the beginning
+    while( ContinueGlobal() )			    //and doing it the brute force way, too lazy to come up with something fancy
     {
       ret++;
       Increment();

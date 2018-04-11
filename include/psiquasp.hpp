@@ -2,7 +2,7 @@
 /**
  * @file	psiquasp.hpp
  * 
- * 		Provides an interface to the other header files.
+ * 		    Provides an interface to the other header files.
  * 
  * @author	Michael Gegg
  * 
