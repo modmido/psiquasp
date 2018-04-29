@@ -98,8 +98,11 @@
  *  + 4a) Phononlaser/Supercooling master equation: two-level systems coupled to a phonon mode with external optical driving
  *        This example explains how to build arbitrary master equations using the elementary arrows
  *
- *  + 5) Same master equation as in 3a but using the graph partitioning package ParMetis to find further symmetries
- *       that lead to a further reduction in degrees of freedom, approximately from N^8 to N^7
+ *  + 5)  Same master equation as in 3a but using the graph partitioning package ParMetis to find further symmetries
+ *        that lead to a further reduction in degrees of freedom, approximately from N^8 to N^7
+ *
+ *  + 6a) Multi MLS Type example: Two types of TLS both interacting with the same, single radiation mode
+ *  + 6b) Multi MLS Type example: Two types of TLS both interacting with the same two radiation modes, includes an inter-TLS gtwo function as a custom observable example
  *
  */
 
@@ -165,7 +168,7 @@ class System
     PetscInt        multiMLS_start[MAX_D_MLS] = {};     //!< the index of the frist dimension of the mls kind in the indices array
     PetscInt		num_dims;			                //!< how many dimensions in total
     PetscInt		num_mlsdims;			            //!< how many mls dimensions
-    PetscInt		num_mlsdens;			            //!< how many mls density degrees of freedom
+    PetscInt		num_mlsdens[MAX_D_MLS] = {};	    //!< how many mls density degrees of freedom
     PetscInt		num_modes;			                //!< how many bosonic modes
     PetscInt		loc_size;			                //!< how many local dm entries?
     
@@ -207,8 +210,8 @@ class System
     PetscErrorCode  MLSAddMulti(PetscInt nmls);
     PetscErrorCode	MLSAddDens(PetscInt n, PetscInt lenght,PetscReal energy);
     PetscErrorCode	MLSAddPol(PetscInt ket, PetscInt bra, PetscInt lenght);
-    PetscErrorCode	MLSAddDens(MLSDim * dim, PetscInt lenght,PetscReal energy);
-    PetscErrorCode	MLSAddPol(MLSDim * dim, PetscInt lenght);
+    PetscErrorCode	MLSAddDens(MLSDim& dim, PetscInt lenght,PetscReal energy);
+    PetscErrorCode	MLSAddPol(MLSDim& dim, PetscInt lenght);
     PetscErrorCode	ModeAdd(PetscInt length, PetscInt offdiag, PetscReal energy);
 
     //symmetry based, advanced dimension setup
@@ -252,14 +255,14 @@ class System
     PetscErrorCode	AddLastRowTrace(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose);									//write the trace operation into the last row of the matrix
 
     PetscErrorCode	AddModeH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, PetscInt modenumber, PetscScalar couplingconst);				//H0 contributions
-    PetscErrorCode	AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * pol, PetscScalar couplingconst);					//
+    PetscErrorCode	AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& pol, PetscScalar couplingconst);					//
 
-    PetscErrorCode	AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * mlsdown, MLSDim * mlsup, ModeDim photon, PetscScalar matrixelem);	//basic interaction Hamiltonians
-    PetscErrorCode	AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * mlsdown, MLSDim * mlsup, PetscScalar matrixelem);		//
+    PetscErrorCode	AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlsdown, MLSDim& mlsup, ModeDim photon, PetscScalar matrixelem);	//basic interaction Hamiltonians
+    PetscErrorCode	AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlsdown, MLSDim& mlsup, PetscScalar matrixelem);		//
     PetscErrorCode	AddModeCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, PetscInt modenumber, PetscScalar couplingconst);			//
 
-    PetscErrorCode	AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * start, MLSDim * goal, PetscReal matrixelem);		//dissipator matrix elements
-    PetscErrorCode	AddLindbladDephMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * n,PetscReal matrixelem);					//cannot be complex thats why the matrix element is PetscReal
+    PetscErrorCode	AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& start, MLSDim& goal, PetscReal matrixelem);		//dissipator matrix elements
+    PetscErrorCode	AddLindbladDephMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& n,PetscReal matrixelem);					//cannot be complex thats why the matrix element is PetscReal
     PetscErrorCode	AddLindbladMode(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, PetscInt modenumber, PetscReal matrixelem);			// --> generates compiler error if this is complex
     PetscErrorCode	AddLindbladModeThermal(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, PetscInt modenumber, PetscReal matrixelem, PetscReal beta);	//
 
@@ -267,8 +270,8 @@ class System
     //advanced, modular Liouville space operators setup
 
     //multi-level systems
-    PetscErrorCode	AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim * elem, PetscScalar matrixelem);
-    PetscErrorCode	AddMLSSingleArrowConnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim * elem1, MLSDim * elem2, PetscScalar matrixelem);
+    PetscErrorCode	AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim& elem, PetscScalar matrixelem);
+    PetscErrorCode	AddMLSSingleArrowConnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim& elem1, MLSDim& elem2, PetscScalar matrixelem);
 
 
     //modes
@@ -293,16 +296,16 @@ class System
     Index		*index;									//!< the index for the whole program/setup stage
 
     //some return functions
-    PetscInt		NumDims()		{ return num_dims;		    }		//!< Return the number of dimensions
-    PetscInt		NMls()			{ return N_MLS[0];			}		//!< Return the number of mls TODO: maybe change this to a more general function
-    PetscInt        NDMLS()         { return N_D_MLS;           }       //!< Return the number of different mls types
-    PetscInt		NumMlsdims()	{ return num_mlsdims;		}		//!< Return the number of mls dof
-    PetscInt		NLevels()		{ return num_mlsdens+1;		}		//!< Return the number of mls levels
-    PetscInt		NumModes()		{ return num_modes;		}		//!< Return the number of modes
+    PetscInt		NumDims()		            { return num_dims;		    }		//!< Return the number of dimensions
+    PetscInt		NMls(PetscInt i)	        { return N_MLS[i];			}		//!< Return the number of mls TODO: maybe change this to a more general function
+    PetscInt        NDMLS()                     { return N_D_MLS;           }       //!< Return the number of different mls types
+    PetscInt		NumMlsdims()	            { return num_mlsdims;		}		//!< Return the number of mls dof
+    PetscInt		NLevels(PetscInt i)	        { return num_mlsdens[i]+1;		}	//!< Return the number of mls levels
+    PetscInt		NumModes()		            { return num_modes;		}		    //!< Return the number of modes
 
-    PetscInt		LocSize()		{ return loc_size;		}		//!< Return the local size of the parallel snippet
+    PetscInt		LocSize()		    { return loc_size;		}		//!< Return the local size of the parallel snippet
 
-    PetscInt		NumParams()		{ return numparams;		}		//!< Return the number of parameters
+    PetscInt		NumParams()		    { return numparams;		}		//!< Return the number of parameters
     PetscScalar		PValue(PetscInt n)	{ return params[n];		}		//!< Return the value of parameter n
     std::string		PName(PetscInt n)	{ return paramname[n];		}		//!< Return the name of parameter n
 
@@ -337,7 +340,8 @@ class System
     PetscErrorCode	ModeDimLen(PetscInt n,PetscInt *ret);					//return the value of modedimlenghts
     PetscErrorCode	IsMLSDimPol(PetscInt n,PetscInt *ret);					//return whether the dimension n is a mls polarization or not (i.e. 1 or 0)
     PetscErrorCode	Energies(PetscInt n,PetscReal *ret);					//return the energy of dimension n
-    PetscErrorCode  SameType(MLSDim * ptr1, MLSDim * ptr2, PetscInt * type);//checks wether the two pointers refer to the same mls type and returns error messages if not
+    PetscErrorCode  SameType(MLSDim& ptr1, MLSDim& ptr2, PetscInt * type);  //checks wether the two pointers refer to the same mls type and returns error messages if not
+    PetscInt        NumMlsdims(PetscInt i);
 
     PetscErrorCode	PrintEnergies();							//print all energies into stdout
     PetscErrorCode	PrintNames();								//print all name into stdout

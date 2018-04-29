@@ -265,7 +265,7 @@ PetscErrorCode Distribution::SetupModeDistribution(System * sys,PetscInt modenum
  * 
  */
 
-PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim * mlsdens)
+PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim& mlsdens)
 {
     PetscFunctionBeginUser;
     
@@ -275,12 +275,12 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim * m
     //finding the dimensions  
     PetscInt	dim=0;
     
-    ierr = sys->FindMatch(mlsdens,&dim); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsdens,&dim); CHKERRQ(ierr);
     
     
     //basic properites
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			        = "MLS"+ mlsdens->ToString();
+    name			        = "MLS"+ mlsdens.ToString();
     
     
     //how many local dm entries?
@@ -322,7 +322,7 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim * m
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nDistribution for mls density %s initialized.\n",mlsdens->ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nDistribution for mls density %s initialized.\n",mlsdens.ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -342,7 +342,7 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim * m
  * 
  */
 
-PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim * mlspol1_name,PetscInt number)
+PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim& mlspol1_name,PetscInt number)
 {
     PetscFunctionBeginUser;
     
@@ -351,16 +351,16 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim * m
     
     //finding the dimension
     PetscInt		mlsdens=0, mlspol1=0, mlspol2=0;
-    MLSDim		    mlspol2_name = mlspol1_name->Swap(*mlspol1_name);	//swap constructor
-    MLSDim		    mlsdens_name (1,*mlspol1_name);			            //density constructor
+    MLSDim		    mlspol2_name = mlspol1_name.Swap(mlspol1_name);	//swap constructor
+    MLSDim		    mlsdens_name (1,mlspol1_name);			            //density constructor
     
-    ierr = sys->FindMatch(mlspol1_name,&mlspol1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlspol1_name,&mlspol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&mlspol2); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens_name,&mlsdens); CHKERRQ(ierr);
     
     
     //multi mls functionality
-    PetscInt    mlstype = mlspol1_name->TypeNumber();
+    PetscInt    mlstype = mlspol1_name.TypeNumber();
     
     
     //basic properites
@@ -418,7 +418,7 @@ PetscErrorCode Distribution::SetupMLSOffdiagDistribution(System * sys,MLSDim * m
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nDistribution for offdiagonal mls entries %s initialized.\n",mlspol1_name->ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nDistribution for offdiagonal mls entries %s initialized.\n",mlspol1_name.ToString().c_str()); CHKERRQ(ierr);
     }
 
     

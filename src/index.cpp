@@ -40,19 +40,19 @@ PetscErrorCode Index::PrintElements()
         
     while( ContinueGlobal() )				//is it possible to continue?
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"dmindex: %d\t mlsindex: %d\t",dmindex,mlsindex); CHKERRQ(ierr);		//dmindex and mlsindex
-      
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"n00: %d\t",MLSQN(-1)); CHKERRQ(ierr);					            //the n00 value
-      
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"indices: "); CHKERRQ(ierr);							                //normal indices
-      for(i=0; i < num_dims; i++)	ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",indices[i]); CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\t"); CHKERRQ(ierr);
-      
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"blockindices: "); CHKERRQ(ierr);						                //block indices
-      for(i=0; i < num_dims; i++)	ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",blockindices[i]); CHKERRQ(ierr);
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"); CHKERRQ(ierr);
-      
-      Increment();				//increment the index by one
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"dmindex: %d\t mlsindex: %d\t",dmindex,mlsindex); CHKERRQ(ierr);		        //dmindex and mlsindex
+        
+        for(i=0; i < N_D_MLS; i++)  ierr = PetscPrintf(PETSC_COMM_WORLD,"n00_%d: %d\t",i,MLSQN(-1-i)); CHKERRQ(ierr);		//the n00 value
+        
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"indices: "); CHKERRQ(ierr);							                        //normal indices
+        for(i=0; i < num_dims; i++) ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",indices[i]); CHKERRQ(ierr);
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"\t"); CHKERRQ(ierr);
+        
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"blockindices: "); CHKERRQ(ierr);						                        //block indices
+        for(i=0; i < num_dims; i++) ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",blockindices[i]); CHKERRQ(ierr);
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"); CHKERRQ(ierr);
+        
+        Increment();				//increment the index by one
     }
     
     PetscFunctionReturn(0);
@@ -80,17 +80,17 @@ PetscErrorCode Index::PrintDiagonals()
     {
       if( !IsPol() )
       {
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"dmindex: %d\t mlsindex: %d\t",dmindex,mlsindex); CHKERRQ(ierr);		//dmindex and mlsindex
-      
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"n00: %d\t",MLSQN(-1)); CHKERRQ(ierr);					//n00 value
-      
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"indices: "); CHKERRQ(ierr);						//normal indices
-	for(i=0; i < num_dims; i++)	ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",indices[i]); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"\t"); CHKERRQ(ierr);
-      
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"blockindices: "); CHKERRQ(ierr);						//block indices
-	for(i=0; i < num_dims; i++)	ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",blockindices[i]); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"dmindex: %d\t mlsindex: %d\t",dmindex,mlsindex); CHKERRQ(ierr);		            //dmindex and mlsindex
+          
+          for(i=0; i < N_D_MLS; i++)  ierr = PetscPrintf(PETSC_COMM_WORLD,"n00_%d: %d\t",i,MLSQN(-1-i)); CHKERRQ(ierr);         //the n00 value
+          
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"indices: "); CHKERRQ(ierr);						                                //normal indices
+          for(i=0; i < num_dims; i++)	ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",indices[i]); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\t"); CHKERRQ(ierr);
+          
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"blockindices: "); CHKERRQ(ierr);						                            //block indices
+          for(i=0; i < num_dims; i++)	ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",blockindices[i]); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"); CHKERRQ(ierr);
       }
       
       Increment();				//increment the index by one
@@ -121,7 +121,7 @@ PetscErrorCode Index::PrintBlockSizes()
       ierr = PetscPrintf(PETSC_COMM_WORLD,"dim %d: blocks %d:\t",i,blocksizes_max[i]); CHKERRQ(ierr);
       for(j=0; j < blocksizes_max[i]; j++)
       {
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",blocksizes[i][j]); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"%d ",blocksizes[i][j]); CHKERRQ(ierr);
       }
       ierr = PetscPrintf(PETSC_COMM_WORLD,"\n"); CHKERRQ(ierr);
     }
@@ -286,15 +286,40 @@ PetscErrorCode Index::PrintGenInfos()
     PetscInt		i;
     
     ierr = PetscPrintf(PETSC_COMM_WORLD,"\n\nIndex general infos:\n"); CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"collection of %d %d-level systems: %d mls dimensions:\n",NMLS,num_levels,firstmodedim); CHKERRQ(ierr);
-    for(i=0; i < firstmodedim; i++) ierr = PetscPrintf(PETSC_COMM_WORLD,"dim: maximum value %d, polarization %d\n",mlsdim_maxvalues[i],mlsdim_pol[i]); CHKERRQ(ierr);
+    if( N_D_MLS == 1 )
+    {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"collection of %d %d-level systems: %d mls dimensions:\n",NMLS[0],num_levels[0],firstmodedim); CHKERRQ(ierr);
+        for(i=0; i < firstmodedim; i++) ierr = PetscPrintf(PETSC_COMM_WORLD,"dim: maximum value %d, polarization %d\n",mlsdim_maxvalues[i],mlsdim_pol[i]); CHKERRQ(ierr);
+    }
+    else if( N_D_MLS > 1 )
+    {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"%d different types of mls:\n",N_D_MLS); CHKERRQ(ierr);
+        for(i=0; i < N_D_MLS; i++)      ierr = PetscPrintf(PETSC_COMM_WORLD,"  Type %d: %d %d-level systems with %d dimensions\n",i,NMLS[i],num_levels[i],multiMLS_start[i+1]-multiMLS_start[i]); CHKERRQ(ierr);
+        for(i=0; i < firstmodedim; i++) ierr = PetscPrintf(PETSC_COMM_WORLD,"dim: maximum value %d, polarization %d\n",mlsdim_maxvalues[i],mlsdim_pol[i]); CHKERRQ(ierr);
+    }
+    
+    i = firstmodedim;
     ierr = PetscPrintf(PETSC_COMM_WORLD,"\n%d modes:\n",(num_dims-firstmodedim)/2); CHKERRQ(ierr);
     while( i < num_dims )
     {
       ierr = PetscPrintf(PETSC_COMM_WORLD,"mode %d: maximum number state order %d, maximum number of offidagonals %d\n",(i-firstmodedim)/2,blocksizes[i+1][0]-1,blocksizes[i][0]-1); CHKERRQ(ierr);
       i += 2;
     }
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"\ntotal degrees of freedom: %d, mls degrees of freedom: %d\n",total_dof,mls_dof[0]); CHKERRQ(ierr); //TODO: make this meaninful for multi mls
+    
+    ierr = PetscPrintf(PETSC_COMM_WORLD,"\ntotal degrees of freedom: %d\n",total_dof); CHKERRQ(ierr);
+    if( N_D_MLS == 1 )
+    {
+        ierr = PetscPrintf(PETSC_COMM_WORLD,"\n mls degrees of freedom: %d\n",mls_dof[0]); CHKERRQ(ierr);
+    }
+    else if( N_D_MLS > 1 )
+    {
+        PetscInt    divider = 1;
+        for(i=0; i < N_D_MLS; i++)
+        {
+            ierr = PetscPrintf(PETSC_COMM_WORLD," Type %d-mls: degrees of freedom: %d\n",mls_dof[i]/divider); CHKERRQ(ierr);
+            divider = mls_dof[i];
+        }
+    }
     
     ierr = PrintBlockSizes(); CHKERRQ(ierr);
     
@@ -316,24 +341,27 @@ PetscErrorCode Index::PrintGenInfos()
 /**
  * @brief	This constructor initializes the Index class with full support for truncation and uniprocessor use. The parallel layout needs to be set after creating the density matrix using SetParallelLayout()
  * 
- * @param	nlevels		the number of levels per mls.
- * @param	nummlsdims	the number of mls dimensions.
- * @param	mlspol		logical array that contains the information which mls dimension is density like and which is polarization like
- * @param	N		the total number of mls
- * @param	dimlenghts	the lenghts of the respective mls dimensions, for truncation
- * @param	modes		the number of modes
+ * @param	ndens   		the number of set densities per mls.
+ * @param	nummlsdims	    the number of mls dimensions.
+ * @param	mlspol		    logical array that contains the information which mls dimension is density like and which is polarization like
+ * @param	N		        the total number of mls
+ * @param	dimlenghts	    the lenghts of the respective mls dimensions, for truncation
+ * @param	modes		    the number of modes
  * @param	modedimlengths	the sizes of the mode dimensions: {mode1order,dmr1,mode2order,dmr2,...}
  * 
  */
 
-Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt N, PetscInt * dimlenghts, PetscInt modes, PetscInt *modedimlengths)
+Index::Index(PetscInt ndens, PetscInt nummlsdims, PetscInt * mlspol, PetscInt N, PetscInt * dimlenghts, PetscInt modes, PetscInt *modedimlengths)
 {
     PetscInt	i;
     
-    num_levels		= nlevels;
     num_dims		= nummlsdims+2*modes;					//total number of dimensions
     firstmodedim	= nummlsdims;						    //the index of the first mode dimension
     N_D_MLS         = 1;                                    //number of different MLS types
+    
+    PetscInt    *loc_nlevels = new PetscInt [N_D_MLS];                      //the number of different mls per type
+    for(i=0; i < N_D_MLS; i++)  loc_nlevels[i] = ndens+1;                   //
+    num_levels                  = loc_nlevels;                              //
     
     PetscInt    *loc_multistart = new PetscInt [N_D_MLS];   //dummy values
     loc_multistart[0]   = 0;                                //only really needed for multi mls type usage
@@ -505,7 +533,7 @@ Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt 
 /**
  * @brief    This constructor initializes the Index class with full support for truncation and uniprocessor use. The parallel layout needs to be set after creating the density matrix using SetParallelLayout()
  *
- * @param    nlevels            the number of levels per mls.
+ * @param    ndens              the number of set densities per mls.
  * @param    nummlsdims         the number of mls dimensions.
  * @param    mlspol             logical array that contains the information which mls dimension is density like and which is polarization like
  * @param    N                  the array for total number of mls for each type
@@ -517,14 +545,17 @@ Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt 
  *
  */
 
-Index::Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt * N, PetscInt * dimlenghts, PetscInt n_d_mls, PetscInt * multimls_start, PetscInt modes, PetscInt *modedimlengths)
+Index::Index(PetscInt * ndens, PetscInt nummlsdims, PetscInt * mlspol, PetscInt * N, PetscInt * dimlenghts, PetscInt n_d_mls, PetscInt * multimls_start, PetscInt modes, PetscInt *modedimlengths)
 {
     PetscInt    i,j;
     
-    num_levels        = nlevels;
     num_dims        = nummlsdims+2*modes;                    //total number of dimensions
     firstmodedim    = nummlsdims;                            //the index of the first mode dimension
     N_D_MLS         = n_d_mls;                               //number of different MLS types
+    
+    PetscInt    *loc_nlevels = new PetscInt [N_D_MLS];                      //the number of different mls per type
+    for(i=0; i < N_D_MLS; i++)  loc_nlevels[i] = ndens[i]+1;              //
+    num_levels                  = loc_nlevels;                              //
     
     PetscInt    *loc_multistart = new PetscInt [N_D_MLS+1];                     //the index of the first dimension of each mls type
     for(i=0; i < N_D_MLS; i++) loc_multistart[i]   = multimls_start[i];         //only needed for multi mls type usage

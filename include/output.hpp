@@ -123,12 +123,12 @@ class DistFile: public OFile
     PetscErrorCode	PrintLine(Vec dm, PetscReal time);
     PetscErrorCode	PrintLineSteady(Vec dm, PetscReal param);
     
-    PetscErrorCode	SetupMLSDistFile(System * system, std::string filename, MLSDim * mlsdens);
-    PetscErrorCode	SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim * mlspol, PetscInt number);
+    PetscErrorCode	SetupMLSDistFile(System * system, std::string filename, MLSDim& mlsdens);
+    PetscErrorCode	SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim& mlspol, PetscInt number);
     PetscErrorCode	SetupModeDistFile(System * system, std::string filename, PetscInt modenumber);
 
-    PetscErrorCode	SetupMLSDistFile(System * system, std::string filename, MLSDim * mlsdens, std::string var);
-    PetscErrorCode	SetupMLSOffdiagDistFile(System* system, std::string filename, MLSDim * mlspol, PetscInt number, std::string var);
+    PetscErrorCode	SetupMLSDistFile(System * system, std::string filename, MLSDim& mlsdens, std::string var);
+    PetscErrorCode	SetupMLSOffdiagDistFile(System* system, std::string filename, MLSDim& mlspol, PetscInt number, std::string var);
     PetscErrorCode	SetupModeDistFile(System * system, std::string filename, PetscInt modename, std::string var);
 };
 

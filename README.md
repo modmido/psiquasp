@@ -1,15 +1,16 @@
 
-# PsiQuaSP -- Permutation symmetry for identical Quantum Systems Package
+# PsiQuaSP
+## Permutation symmetry for identical Quantum Systems Package
 
 PsiQuaSP is a library that enables easy and quick setup of quantum optical Lindblad quantum master equation simulations for PETSc and SLEPc. 
 The main feature of the library is the ability to treat permutationally symmetric many multi-level system setups with polynomial instead of exponential complexity. 
 The methodology of this approach is described in:
 
-M. Richter, M. Gegg, TS. Theuerholz and A. Knorr, Phys. Rev. B 91, 035306 (2015) https://arxiv.org/abs/1412.0559
+ + [M. Richter, M. Gegg, TS. Theuerholz and A. Knorr, Phys. Rev. B 91, 035306 (2015)](https://arxiv.org/abs/1412.0559)
 
-M. Gegg and M. Richter, New. J. Phys. 18, 043037 (2016) http://iopscience.iop.org/article/10.1088/1367-2630/18/4/043037/meta
+ + [M. Gegg and M. Richter, New. J. Phys. 18, 043037 (2016)](http://iopscience.iop.org/article/10.1088/1367-2630/18/4/043037/meta)
 
-M. Gegg and M. Richter, arXiv 1707.01079 (2017) https://arxiv.org/abs/1707.01079
+ + [M. Gegg and M. Richter, Sci. Rep. 7, 16304 (2017)](https://www.nature.com/articles/s41598-017-16178-8)
 
 The library only provides setup functions for the master equation and the program output, the computing stage is solely done by the PETSc and SLEPc packages. 
 PETSc and SLEPc are state of the art sparse linear algebra and differential equations packages that are continuously improved. 
@@ -23,6 +24,7 @@ equation/linear algebra computations and PsiQuaSP is designed in a way that prov
 
 Installation instructions can be found in the INSTALL.md file.
 
+### Documentation
 PsiQuaSP uses Doxygen commenting by Dimitri van Heesch, http://www.stack.nl/~dimitri/doxygen/. Install doxygen and run
 
 `doxygen Doxyfile`
@@ -30,7 +32,7 @@ PsiQuaSP uses Doxygen commenting by Dimitri van Heesch, http://www.stack.nl/~dim
 in the PsiQuaSP folder. The doxumentation will be build into the `doc/` folder.
 Example codes introducing a large portion of the features of PsiQuaSP are in the `example/` folder.
 
-
+### Team
 PsiQuaSP Team: Michael Gegg and Marten Richter
 
 Theoretical, algorithmic, and numerical concepts and strategies: Michael Gegg and Marten Richter

@@ -41,8 +41,8 @@ class Distribution: public PropBase
     PetscErrorCode	Compute (Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);	    //compute the expecation value
     PetscErrorCode	ComputeAll (Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);	//compute the expecation value
     
-    PetscErrorCode	SetupMLSDensityDistribution(System * sys,MLSDim * mlsdens);
-    PetscErrorCode	SetupMLSOffdiagDistribution(System * sys,MLSDim * mlsop,PetscInt number);
+    PetscErrorCode	SetupMLSDensityDistribution(System * sys,MLSDim& mlsdens);
+    PetscErrorCode	SetupMLSOffdiagDistribution(System * sys,MLSDim& mlsop,PetscInt number);
     PetscErrorCode	SetupModeDistribution(System * sys,PetscInt modenumber);
 };
 

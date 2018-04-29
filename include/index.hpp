@@ -56,7 +56,7 @@ protected:
     PetscInt    N_D_MLS;                //!< the number of different mls
     PetscInt    *multiMLS_start;        //!< the index of the frist dimension of the mls kind in the indices array
     
-    PetscInt	num_levels;			    //!< the number of levels per mls
+    PetscInt	*num_levels;			//!< the number of levels per mls
     PetscInt	*mls_dof;			    //!< the mls total degrees of freedom
     PetscInt	*mode_dofs;			    //!< the dofs for each mode
     PetscInt	*NMLS;				    //!< the number of different mls
@@ -82,7 +82,7 @@ public:
   
     //constructors/destructors
     Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt N, PetscInt * dimlenghts, PetscInt modes, PetscInt *modedimlengths);
-    Index(PetscInt nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt * N, PetscInt * dimlenghts, PetscInt n_d_mls, PetscInt * multimls_start, PetscInt modes, PetscInt *modedimlengths);
+    Index(PetscInt *nlevels, PetscInt nummlsdims, PetscInt * mlspol, PetscInt * N, PetscInt * dimlenghts, PetscInt n_d_mls, PetscInt * multimls_start, PetscInt modes, PetscInt *modedimlengths);
     ~Index();								//default destructor
     
     //set parallel layout

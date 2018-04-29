@@ -56,23 +56,23 @@ class Observable: public PropBase
     PetscErrorCode	SetupTr(System * sys);
     
     //mls
-    PetscErrorCode	SetupMlsOccupation(System * sys,MLSDim * mlsdens);
-    PetscErrorCode	SetupMlsPolarization(System * sys, MLSDim * mlsop, PetscReal freq);
-    PetscErrorCode	SetupMlsHigherPolarization(System * sys, MLSDim * mlsop, PetscInt order, PetscReal freq);
-    PetscErrorCode	SetupMLSOccupationFull(System * sys, MLSDim * mlsop);
-    PetscErrorCode	SetupMLSIntercoupling(System * sys, MLSDim * mlsop);
-    PetscErrorCode	SetupMlsJzDiff(System * sys,MLSDim * Mlsdens1, MLSDim * Mlsdens2);
-    PetscErrorCode	SetupMlsJzSquaredNorm(System * sys,MLSDim * Mlsdens1, MLSDim * Mlsdens2);
-    PetscErrorCode	SetupMlsJzNorm(System * sys,MLSDim * Mlsdens1, MLSDim * Mlsdens2);
-    PetscErrorCode	SetupTotalSpin(System * sys,MLSDim * Mlsdens1, MLSDim * Mlsdens2);
+    PetscErrorCode	SetupMlsOccupation(System * sys,MLSDim& mlsdens);
+    PetscErrorCode	SetupMlsPolarization(System * sys, MLSDim& mlsop, PetscReal freq);
+    PetscErrorCode	SetupMlsHigherPolarization(System * sys, MLSDim& mlsop, PetscInt order, PetscReal freq);
+    PetscErrorCode	SetupMLSOccupationFull(System * sys, MLSDim& mlsop);
+    PetscErrorCode	SetupMLSIntercoupling(System * sys, MLSDim& mlsop);
+    PetscErrorCode	SetupMlsJzDiff(System * sys,MLSDim& Mlsdens1, MLSDim& Mlsdens2);
+    PetscErrorCode	SetupMlsJzSquaredNorm(System * sys,MLSDim& Mlsdens1, MLSDim& Mlsdens2);
+    PetscErrorCode	SetupMlsJzNorm(System * sys,MLSDim& Mlsdens1, MLSDim& Mlsdens2);
+    PetscErrorCode	SetupTotalSpin(System * sys,MLSDim& Mlsdens1, MLSDim& Mlsdens2);
     
     //mode
     PetscErrorCode	SetupModeOccupation(System * sys,PetscInt mode);
     PetscErrorCode	SetupModePolarization(System * sys, PetscInt mode, PetscReal freq);
 
     //combined, not implemented yet
-    PetscErrorCode	SetupCombOccupation(System * sys, MLSDim * mlsop, PetscInt mode);
-    PetscErrorCode	SetupCombPolarization(System * sys, MLSDim * mlsop, PetscInt mode);
+    PetscErrorCode	SetupCombOccupation(System * sys, MLSDim& mlsop, PetscInt mode);
+    PetscErrorCode	SetupCombPolarization(System * sys, MLSDim& mlsop, PetscInt mode);
     
 };
 

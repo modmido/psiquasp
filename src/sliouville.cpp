@@ -295,7 +295,7 @@ PetscErrorCode	System::AddModeH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, Pet
  * 
  */
 
-PetscErrorCode	System::AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * polname, PetscScalar couplingconst)
+PetscErrorCode	System::AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& polname, PetscScalar couplingconst)
 {
     PetscFunctionBeginUser;
     
@@ -303,18 +303,18 @@ PetscErrorCode	System::AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, Pets
     
     
     //some pointer arithmetic for making the polymorphism work
-    MultiMLSDim *ptr1 = dynamic_cast<MultiMLSDim*> (polname);
-    MLSDim      *ptr2 = dynamic_cast<MLSDim*> (polname);
+    MultiMLSDim *ptr1 = dynamic_cast<MultiMLSDim*> (&polname);
+    MLSDim      *ptr2 = dynamic_cast<MLSDim*> (&polname);
     MLSDim      *pol2name;
     
     if( !ptr1 && ptr2 )             //means that it is a MLSDim object
     {
-        MLSDim  * ptr = new MLSDim (polname->bra,polname->ket);
+        MLSDim  * ptr = new MLSDim (polname.bra,polname.ket);
         pol2name = ptr;
     }
     else if( ptr1 )                 //means that it is a MultiMLSDim object
     {
-        MultiMLSDim  * ptr = new MultiMLSDim (polname->bra,polname->ket,polname->mlsTypeNumber);
+        MultiMLSDim  * ptr = new MultiMLSDim (polname.bra,polname.ket,polname.mlsTypeNumber);
         pol2name = ptr;
     }
     else
@@ -327,7 +327,7 @@ PetscErrorCode	System::AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, Pets
     //finding the dimensions  
     PetscInt	pol1=0, pol2=0;
     
-    ierr = FindMatch(polname,&pol1); CHKERRQ(ierr);
+    ierr = FindMatch(&polname,&pol1); CHKERRQ(ierr);
     ierr = FindMatch(pol2name,&pol2); CHKERRQ(ierr);
     
     delete pol2name;
@@ -362,13 +362,13 @@ PetscErrorCode	System::AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, Pets
     {
       if(!choose)
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSH0 preassembly completed:\n  input: %s\n",polname->ToString().c_str());
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSH0 preassembly completed:\n  input: %s\n",polname.ToString().c_str());
           ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,0,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
           PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
       }
       else
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSH0 assembly completed.\n  input: %s\n",polname->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSH0 assembly completed.\n  input: %s\n",polname.ToString().c_str()); CHKERRQ(ierr);
       }
     }
     
@@ -396,7 +396,7 @@ PetscErrorCode	System::AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, Pets
  * 
  */
 
-PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * mlsdown, MLSDim * mlsup, ModeDim photon, PetscScalar couplingconst)
+PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlsdown, MLSDim& mlsup, ModeDim photon, PetscScalar couplingconst)
 {
     PetscFunctionBeginUser;
     
@@ -407,8 +407,8 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
     PetscInt down=0, up=0, modedim=0, type=0;
   
     ierr = SameType(mlsdown,mlsup,&type); CHKERRQ(ierr);        //sanity check and get type number
-    ierr = FindMatch(mlsdown,&down); CHKERRQ(ierr);
-    ierr = FindMatch(mlsup,&up); CHKERRQ(ierr);
+    ierr = FindMatch(&mlsdown,&down); CHKERRQ(ierr);
+    ierr = FindMatch(&mlsup,&up); CHKERRQ(ierr);
     ierr = FindMatch(&photon,&modedim); CHKERRQ(ierr);
     
  
@@ -448,7 +448,7 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)-1,(mlsup->ToString()).c_str(),index->Indices(up)+1,(photon.ToString()).c_str(),index->Indices(modedim)-1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)-1,(mlsup.ToString()).c_str(),index->Indices(up)+1,(photon.ToString()).c_str(),index->Indices(modedim)-1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d mode pitch = %d\n",locindex,index->MLSCPitch(down,up),index->ModeDPitch(modedim));
                   }
                   value	= couplingconst*PetscSqrtReal((PetscReal) mvalue)*((PetscScalar) (index->MLSQN(up)+1));
@@ -477,7 +477,7 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)+1,(mlsup->ToString()).c_str(),index->Indices(up)-1,(photon.ToString()).c_str(),index->Indices(modedim)+1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)+1,(mlsup.ToString()).c_str(),index->Indices(up)-1,(photon.ToString()).c_str(),index->Indices(modedim)+1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d mode pitch = %d\n",locindex,index->MLSCPitch(up,down),index->ModeIPitch(modedim));
                   }
                   value	= couplingconst*PetscSqrtReal((PetscReal) (mvalue+1))*((PetscScalar) (index->MLSQN(down)+1));
@@ -510,7 +510,7 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)-1,(mlsup->ToString()).c_str(),index->Indices(up)+1,(photon.ToString()).c_str(),index->Indices(modedim)-1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)-1,(mlsup.ToString()).c_str(),index->Indices(up)+1,(photon.ToString()).c_str(),index->Indices(modedim)-1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d mode pitch = %d\n",locindex,index->MLSIPitch(up),index->ModeDPitch(modedim));
                   }
                   value	= couplingconst*PetscSqrtReal((PetscReal) mvalue)*((PetscScalar) (index->MLSQN(up)+1));
@@ -539,7 +539,7 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
                   if( column >= index->TotalDOF() )
                   {
                       ierr    = index->PrintIndices(); CHKERRQ(ierr);
-                      ierr    = PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)+1,(mlsup->ToString()).c_str(),index->Indices(up)-1,(photon.ToString()).c_str(),index->Indices(modedim)+1);
+                      ierr    = PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)+1,(mlsup.ToString()).c_str(),index->Indices(up)-1,(photon.ToString()).c_str(),index->Indices(modedim)+1);
                       ierr    = PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d mode pitch = %d\n",locindex,index->MLSDPitch(up),index->ModeIPitch(modedim));
                   }
                   value    = couplingconst*PetscSqrtReal((PetscReal) (mvalue+1))*((PetscScalar) (n00+1));
@@ -572,7 +572,7 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t",(mlsdown->ToString()).c_str(),index->Indices(down)-1,(mlsup->ToString()).c_str(),index->Indices(up)+1,(photon.ToString()).c_str(),index->Indices(modedim)-1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t",(mlsdown.ToString()).c_str(),index->Indices(down)-1,(mlsup.ToString()).c_str(),index->Indices(up)+1,(photon.ToString()).c_str(),index->Indices(modedim)-1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d mode pitch = %d\n",locindex,index->MLSDPitch(down),index->ModeDPitch(modedim));
                   }
                   value	= couplingconst*PetscSqrtReal((PetscReal) mvalue)*((PetscScalar) (n00+1));
@@ -601,7 +601,7 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t",(mlsdown->ToString()).c_str(),index->Indices(down)+1,(mlsup->ToString()).c_str(),index->Indices(up)-1,(photon.ToString()).c_str(),index->Indices(modedim)+1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d, %s = %d\t",(mlsdown.ToString()).c_str(),index->Indices(down)+1,(mlsup.ToString()).c_str(),index->Indices(up)-1,(photon.ToString()).c_str(),index->Indices(modedim)+1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d mode pitch = %d\n",locindex,index->MLSIPitch(down),index->ModeIPitch(modedim));
                   }
                   value	= couplingconst*PetscSqrtReal((PetscReal) (mvalue+1))*((PetscScalar) (index->MLSQN(down)+1));
@@ -625,13 +625,13 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
     {
       if(!choose)
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddHamElPh preassembly completed:\n  input: %s %s %s\n",mlsdown->ToString().c_str(),mlsup->ToString().c_str(),photon.ToString().c_str());
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddHamElPh preassembly completed:\n  input: %s %s %s\n",mlsdown.ToString().c_str(),mlsup.ToString().c_str(),photon.ToString().c_str());
           ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
           PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
       }
       else
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddHamElPh assembly completed.\n  input: %s %s %s\n",mlsdown->ToString().c_str(),mlsup->ToString().c_str(),photon.ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddHamElPh assembly completed.\n  input: %s %s %s\n",mlsdown.ToString().c_str(),mlsup.ToString().c_str(),photon.ToString().c_str()); CHKERRQ(ierr);
       }
     }
     
@@ -657,7 +657,7 @@ PetscErrorCode System::AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz,
  * 
  */
 
-PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * mlsdown, MLSDim * mlsup, PetscScalar couplingconst)
+PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlsdown, MLSDim& mlsup, PetscScalar couplingconst)
 {
     PetscErrorCode	ierr;
     
@@ -668,8 +668,8 @@ PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz
     PetscInt down=0, up=0, type = 0;
     
     ierr = SameType(mlsdown,mlsup,&type); CHKERRQ(ierr);            //sanity check and get mls type number
-    ierr = FindMatch(mlsdown,&down); CHKERRQ(ierr);
-    ierr = FindMatch(mlsup,&up); CHKERRQ(ierr);
+    ierr = FindMatch(&mlsdown,&down); CHKERRQ(ierr);
+    ierr = FindMatch(&mlsup,&up); CHKERRQ(ierr);
        
 
     //loop part
@@ -705,7 +705,7 @@ PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)-1,(mlsup->ToString()).c_str(),index->Indices(up)+1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)-1,(mlsup.ToString()).c_str(),index->Indices(up)+1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d\n",locindex,index->MLSCPitch(down,up));
                   }
                   value	= couplingconst*((PetscScalar) (index->MLSQN(up)+1));
@@ -734,7 +734,7 @@ PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)+1,(mlsup->ToString()).c_str(),index->Indices(up)-1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)+1,(mlsup.ToString()).c_str(),index->Indices(up)-1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d\n",locindex,index->MLSCPitch(up,down));
                   }
                   value	= couplingconst*((PetscScalar) (index->MLSQN(down)+1));
@@ -766,7 +766,7 @@ PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)-1,(mlsup->ToString()).c_str(),index->Indices(up)+1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)-1,(mlsup.ToString()).c_str(),index->Indices(up)+1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d\n",locindex,index->MLSIPitch(up));
                   }
                   value	= couplingconst*((PetscScalar) (index->MLSQN(up)+1));
@@ -795,7 +795,7 @@ PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)+1,(mlsup->ToString()).c_str(),index->Indices(up)-1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)+1,(mlsup.ToString()).c_str(),index->Indices(up)-1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d\n",locindex,index->MLSDPitch(up));
                   }
                   value	= couplingconst*((PetscScalar) (n00+1));
@@ -827,7 +827,7 @@ PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)-1,(mlsup->ToString()).c_str(),index->Indices(up)+1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)-1,(mlsup.ToString()).c_str(),index->Indices(up)+1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d\n",locindex,index->MLSDPitch(down));
                   }
                   value	= couplingconst*((PetscScalar) (n00+1));
@@ -856,7 +856,7 @@ PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz
                   if( column >= index->TotalDOF() )
                   {
                       ierr	= index->PrintIndices(); CHKERRQ(ierr);
-                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown->ToString()).c_str(),index->Indices(down)+1,(mlsup->ToString()).c_str(),index->Indices(up)-1);
+                      ierr	= PetscPrintf(PETSC_COMM_WORLD,"column: %s = %d, %s = %d\t\t",(mlsdown.ToString()).c_str(),index->Indices(down)+1,(mlsup.ToString()).c_str(),index->Indices(up)-1);
                       ierr	= PetscPrintf(PETSC_COMM_WORLD,"locindex = %d mls pitch = %d\n",locindex,index->MLSIPitch(down));
                   }
                   value	= couplingconst*((PetscScalar) (index->MLSQN(down)+1));
@@ -880,13 +880,13 @@ PetscErrorCode	System::AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz
     {
       if(!choose)
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddCohDrive preassembly completed:\n  input %s %s\n",mlsdown->ToString().c_str(),mlsup->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddCohDrive preassembly completed:\n  input %s %s\n",mlsdown.ToString().c_str(),mlsup.ToString().c_str()); CHKERRQ(ierr);
           ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
           PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
       }
       else
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddCohDrive assembly completed.\n  input %s %s\n",mlsdown->ToString().c_str(),mlsup->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddCohDrive assembly completed.\n  input %s %s\n",mlsdown.ToString().c_str(),mlsup.ToString().c_str()); CHKERRQ(ierr);
       }
     }
     
@@ -1065,7 +1065,7 @@ PetscErrorCode	System::AddModeCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nn
  * 
  */
 
-PetscErrorCode	System::AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * mlsstart, MLSDim * mlsgoal, PetscReal couplingconst)
+PetscErrorCode	System::AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlsstart, MLSDim& mlsgoal, PetscReal couplingconst)
 {
     PetscErrorCode	ierr;
     
@@ -1076,8 +1076,8 @@ PetscErrorCode	System::AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * 
     PetscInt start=0, goal=0, type=0;
     
     ierr = SameType(mlsstart,mlsgoal,&type); CHKERRQ(ierr);            //sanity check and get mls type number
-    ierr = FindMatch(mlsstart,&start); CHKERRQ(ierr);
-    ierr = FindMatch(mlsgoal,&goal); CHKERRQ(ierr);
+    ierr = FindMatch(&mlsstart,&start); CHKERRQ(ierr);
+    ierr = FindMatch(&mlsgoal,&goal); CHKERRQ(ierr);
     
     
     //loop part
@@ -1220,13 +1220,13 @@ PetscErrorCode	System::AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * 
     {
       if(!choose)
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddLindbladRelaxMLS preassembly completed:\n  input %s %s\n",mlsstart->ToString().c_str(),mlsgoal->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddLindbladRelaxMLS preassembly completed:\n  input %s %s\n",mlsstart.ToString().c_str(),mlsgoal.ToString().c_str()); CHKERRQ(ierr);
           ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
           PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
       }
       else
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddLindbladRelaxMLS assembly completed.\n  input %s %s\n",mlsstart->ToString().c_str(),mlsgoal->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddLindbladRelaxMLS assembly completed.\n  input %s %s\n",mlsstart.ToString().c_str(),mlsgoal.ToString().c_str()); CHKERRQ(ierr);
       }
     }
     
@@ -1252,7 +1252,7 @@ PetscErrorCode	System::AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * 
  * 
  */
 
-PetscErrorCode	System::AddLindbladDephMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * mlselem, PetscReal matrixelem)
+PetscErrorCode	System::AddLindbladDephMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlselem, PetscReal matrixelem)
 {    
     PetscFunctionBeginUser;
     
@@ -1262,9 +1262,9 @@ PetscErrorCode	System::AddLindbladDephMLS(Mat AA, PetscInt * d_nnz, PetscInt * o
     //finding the dimensions
     PetscInt elem=0;
     
-    ierr = FindMatch(mlselem,&elem); CHKERRQ(ierr);
+    ierr = FindMatch(&mlselem,&elem); CHKERRQ(ierr);
     
-    if( mlselem->IsDensity() )
+    if( mlselem.IsDensity() )
     {
         (*PetscErrorPrintf)("Error: AddLindbladDephMLS: This function should only be used for polarization type dimensions!\n");
         SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
@@ -1299,13 +1299,13 @@ PetscErrorCode	System::AddLindbladDephMLS(Mat AA, PetscInt * d_nnz, PetscInt * o
     {
       if(!choose)
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddLindbladDephMLS preassembly completed:\n  input %s\n",mlselem->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddLindbladDephMLS preassembly completed:\n  input %s\n",mlselem.ToString().c_str()); CHKERRQ(ierr);
           ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
           PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
       }
       else
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddLindbladDephMLS assembly completed.\n  input %s\n",mlselem->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddLindbladDephMLS assembly completed.\n  input %s\n",mlselem.ToString().c_str()); CHKERRQ(ierr);
       }
     }
     

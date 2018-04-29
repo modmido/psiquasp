@@ -381,16 +381,16 @@ PetscErrorCode Observable::SetupTr(System * sys)
  * 
  */
 
-PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim * Mlsdens)
+PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim& Mlsdens)
 {
     PetscFunctionBeginUser;
     PetscErrorCode	ierr;
     
     //failsafe 
-    if( !Mlsdens->IsDensity() )
+    if( !Mlsdens.IsDensity() )
     {
       (*PetscErrorPrintf)("Invalid input for SetupMlsOccupation():\n");
-      (*PetscErrorPrintf)("Invalid input for mls density: current MLSDim is %s\n",Mlsdens->ToString().c_str());
+      (*PetscErrorPrintf)("Invalid input for mls density: current MLSDim is %s\n",Mlsdens.ToString().c_str());
       SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
     else
@@ -398,7 +398,7 @@ PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim * Mlsdens)
       //finding the dimensions  
       PetscInt	dim=0;
       
-      ierr = sys->FindMatch(Mlsdens,&dim); CHKERRQ(ierr);
+      ierr = sys->FindMatch(&Mlsdens,&dim); CHKERRQ(ierr);
     
       //basic properties
       isherm			    = 1;							            //it is an observable that should be real valued.
@@ -446,7 +446,7 @@ PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim * Mlsdens)
       //ouput part
       if(sys->LongOut() || sys->PropOut())
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for occupation of %s dimension initialized.\n",(Mlsdens->ToString()).c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for occupation of %s dimension initialized.\n",(Mlsdens.ToString()).c_str()); CHKERRQ(ierr);
       }
     }
     
@@ -468,7 +468,7 @@ PetscErrorCode Observable::SetupMlsOccupation(System * sys, MLSDim * Mlsdens)
  * 
  */
 
-PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim * mlsop, PetscReal freq)
+PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim& mlsop, PetscReal freq)
 {
     PetscFunctionBeginUser;
   
@@ -478,13 +478,13 @@ PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim * mlsop, Pet
     //finding the dimensions  
     PetscInt		pol=0;
     
-    ierr = sys->FindMatch(mlsop,&pol); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsop,&pol); CHKERRQ(ierr);
     
   
     //basic properties
     isherm			= 0;
     shift			= 0;
-    name			= "<"+mlsop->ToString().replace(0,1,"J")+">";
+    name			= "<"+mlsop.ToString().replace(0,1,"J")+">";
     
     
     //how many local dm entries?
@@ -526,7 +526,7 @@ PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim * mlsop, Pet
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for MLS polarization %s initialized.\n", (mlsop->ToString()).c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for MLS polarization %s initialized.\n", (mlsop.ToString()).c_str()); CHKERRQ(ierr);
     }
     
 
@@ -549,7 +549,7 @@ PetscErrorCode Observable::SetupMlsPolarization(System* sys, MLSDim * mlsop, Pet
  * 
  */
 
-PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim * mlsop, PetscInt order, PetscReal freq)
+PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim& mlsop, PetscInt order, PetscReal freq)
 {
     PetscFunctionBeginUser;
   
@@ -559,13 +559,13 @@ PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim * mlso
     //finding the dimensions  
     PetscInt		pol=0;
     
-    ierr = sys->FindMatch(mlsop,&pol); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsop,&pol); CHKERRQ(ierr);
     
 
     //basic properties
     isherm		= 0;
     shift		= 0;
-    name		= "<("+mlsop->ToString().replace(0,1,"J")+")^"+std::to_string(order)+">";
+    name		= "<("+mlsop.ToString().replace(0,1,"J")+")^"+std::to_string(order)+">";
     
     
     //how many local dm entries?
@@ -611,7 +611,7 @@ PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim * mlso
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for order %d MLS polarization %s initialized.\n", order, (mlsop->ToString()).c_str() ); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nObservable for order %d MLS polarization %s initialized.\n", order, (mlsop.ToString()).c_str() ); CHKERRQ(ierr);
     }
     
 
@@ -630,17 +630,17 @@ PetscErrorCode Observable::SetupMlsHigherPolarization(System* sys, MLSDim * mlso
  * 
  */
 
-PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim * mlspol1_name)
+PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim& mlspol1_name)
 {
     PetscFunctionBeginUser;
     PetscErrorCode	ierr;
     
     //finding the dimensions  
     PetscInt		mlsdens=0, mlspol1=0, mlspol2=0;
-    MLSDim		    mlspol2_name = mlspol1_name->Swap(*mlspol1_name);		//swap constructor
-    MLSDim		    mlsdens_name (1,*mlspol1_name);				            //density constructor
+    MLSDim		    mlspol2_name = mlspol1_name.Swap(mlspol1_name);		//swap constructor
+    MLSDim		    mlsdens_name (1,mlspol1_name);				            //density constructor
     
-    ierr = sys->FindMatch(mlspol1_name,&mlspol1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlspol1_name,&mlspol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&mlspol2); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens_name,&mlsdens); CHKERRQ(ierr);
     
@@ -649,7 +649,7 @@ PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim * mlspol1
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<"+mlspol2_name.ToString().replace(0,1,"J") + mlspol1_name->ToString().replace(0,1,"J")+">";
+    name			= "<"+mlspol2_name.ToString().replace(0,1,"J") + mlspol1_name.ToString().replace(0,1,"J")+">";
       
     
     //how many local dm entries?
@@ -710,7 +710,7 @@ PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim * mlspol1
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMLSOccupationFull initialized: mlspol1 = %s mlspol2 = %s mlsdens = %s\n", mlspol1_name->ToString().c_str(), mlspol2_name.ToString().c_str(), mlsdens_name.ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMLSOccupationFull initialized: mlspol1 = %s mlspol2 = %s mlsdens = %s\n", mlspol1_name.ToString().c_str(), mlspol2_name.ToString().c_str(), mlsdens_name.ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -729,7 +729,7 @@ PetscErrorCode	Observable::SetupMLSOccupationFull(System * sys, MLSDim * mlspol1
  * 
  */
 
-PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim * mlspol1_name)
+PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim& mlspol1_name)
 {
     PetscFunctionBeginUser;
   
@@ -738,9 +738,9 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim * mlspol1_
     
     //finding the dimensions  
     PetscInt		mlspol1=0, mlspol2=0;
-    MLSDim		    mlspol2_name  = mlspol1_name->Swap(*mlspol1_name);			//swap constructor
+    MLSDim		    mlspol2_name  = mlspol1_name.Swap(mlspol1_name);			//swap constructor
     
-    ierr = sys->FindMatch(mlspol1_name,&mlspol1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlspol1_name,&mlspol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&mlspol2); CHKERRQ(ierr);
     
     
@@ -748,7 +748,7 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim * mlspol1_
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<"+mlspol2_name.ToString().replace(0,1,"s")+ "_i " + mlspol1_name->ToString().replace(0,1,"s")+"_j"+">";
+    name			= "<"+mlspol2_name.ToString().replace(0,1,"s")+ "_i " + mlspol1_name.ToString().replace(0,1,"s")+"_j"+">";
     
     
     //how many local dm entries?
@@ -795,7 +795,7 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim * mlspol1_
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMLSIntercoupling initialized: mlspol1 = %s \n", mlspol1_name->ToString().c_str() ); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMLSIntercoupling initialized: mlspol1 = %s \n", mlspol1_name.ToString().c_str() ); CHKERRQ(ierr);
     }
     
     
@@ -815,7 +815,7 @@ PetscErrorCode	Observable::SetupMLSIntercoupling(System * sys, MLSDim * mlspol1_
  * 
  */
 
-PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim * mlsdens1_name, MLSDim * mlsdens2_name)
+PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim& mlsdens1_name, MLSDim& mlsdens2_name)
 {
     PetscFunctionBeginUser;
   
@@ -825,15 +825,16 @@ PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim * mlsdens1_name, M
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0;
     
-    ierr = sys->FindMatch(mlsdens1_name,&dens1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(mlsdens2_name,&dens2); CHKERRQ(ierr);
+    ierr = sys->SameType(mlsdens1_name,mlsdens2_name,NULL); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
 
     
     //basic properties
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 1.0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<("+mlsdens1_name->ToString().replace(0,1,"J") +"-"+ mlsdens2_name->ToString().replace(0,1,"J")+")^2-1>";
+    name			= "<("+mlsdens1_name.ToString().replace(0,1,"J") +"-"+ mlsdens2_name.ToString().replace(0,1,"J")+")^2-1>";
     
     
     //how many local dm entries?
@@ -875,7 +876,7 @@ PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim * mlsdens1_name, M
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzDiff initialized: input: %s %s \n",mlsdens1_name->ToString().c_str(),mlsdens2_name->ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzDiff initialized: input: %s %s \n",mlsdens1_name.ToString().c_str(),mlsdens2_name.ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -896,7 +897,7 @@ PetscErrorCode Observable::SetupMlsJzDiff(System * sys,MLSDim * mlsdens1_name, M
  * 
  */
 
-PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim * mlsdens1_name, MLSDim * mlsdens2_name)
+PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim& mlsdens1_name, MLSDim& mlsdens2_name)
 {
     PetscFunctionBeginUser;
   
@@ -906,15 +907,16 @@ PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim * mlsdens1
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0;
     
-    ierr = sys->FindMatch(mlsdens1_name,&dens1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(mlsdens2_name,&dens2); CHKERRQ(ierr);
+    ierr = sys->SameType(mlsdens1_name,mlsdens2_name,NULL); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
 
        
     //basic properties
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 0.0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<("+mlsdens1_name->ToString().replace(0,1,"J") +"/2-"+ mlsdens2_name->ToString().replace(0,1,"J")+"/2)^2>";
+    name			= "<("+mlsdens1_name.ToString().replace(0,1,"J") +"/2-"+ mlsdens2_name.ToString().replace(0,1,"J")+"/2)^2>";
     
     
     //how many local dm entries?
@@ -956,7 +958,7 @@ PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim * mlsdens1
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzSquaredNorm initialized: input: %s %s \n",mlsdens1_name->ToString().c_str(),mlsdens2_name->ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzSquaredNorm initialized: input: %s %s \n",mlsdens1_name.ToString().c_str(),mlsdens2_name.ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -977,7 +979,7 @@ PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim * mlsdens1
  * 
  */
 
-PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim * mlsdens1_name, MLSDim * mlsdens2_name)
+PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim& mlsdens1_name, MLSDim& mlsdens2_name)
 {
     PetscFunctionBeginUser;
   
@@ -987,15 +989,16 @@ PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim * mlsdens1_name, 
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0;
     
-    ierr = sys->FindMatch(mlsdens1_name,&dens1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(mlsdens2_name,&dens2); CHKERRQ(ierr);
+    ierr = sys->SameType(mlsdens1_name,mlsdens2_name,NULL); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
        
 
     //basic properties
     isherm			= 1;							//it is an observable that should be real valued.
     shift			= 0.0;
     real_value_tolerance	= sys->RealValueTolerance();				//hermitian observables need a tolerance for their realvaluedness
-    name			= "<("+mlsdens1_name->ToString().replace(0,1,"J") +"/2-"+ mlsdens2_name->ToString().replace(0,1,"J")+"/2)>";
+    name			= "<("+mlsdens1_name.ToString().replace(0,1,"J") +"/2-"+ mlsdens2_name.ToString().replace(0,1,"J")+"/2)>";
     
     
     //how many local dm entries?
@@ -1037,7 +1040,7 @@ PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim * mlsdens1_name, 
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzNorm initialized: input: %s %s \n",mlsdens1_name->ToString().c_str(),mlsdens2_name->ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupMlsJzNorm initialized: input: %s %s \n",mlsdens1_name.ToString().c_str(),mlsdens2_name.ToString().c_str()); CHKERRQ(ierr);
     }
     
     
@@ -1057,7 +1060,7 @@ PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim * mlsdens1_name, 
  * 
  */
 
-PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim * mlsdens1_name, MLSDim * mlsdens2_name)
+PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim& mlsdens1_name, MLSDim& mlsdens2_name)
 {
     PetscFunctionBeginUser;
   
@@ -1066,11 +1069,11 @@ PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim * mlsdens1_name, 
     
     //finding the dimensions  
     PetscInt		dens1=0, dens2=0, pol1 = 0, pol2 = 0;
-    MLSDim		    mlspol1_name (*mlsdens2_name,*mlsdens1_name);
-    MLSDim		    mlspol2_name (*mlsdens1_name,*mlsdens2_name);
+    MLSDim		    mlspol1_name (mlsdens2_name,mlsdens1_name);
+    MLSDim		    mlspol2_name (mlsdens1_name,mlsdens2_name);
     
-    ierr = sys->FindMatch(mlsdens1_name,&dens1); CHKERRQ(ierr);
-    ierr = sys->FindMatch(mlsdens2_name,&dens2); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
+    ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol1_name,&pol1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlspol2_name,&pol2); CHKERRQ(ierr);
     
@@ -1137,7 +1140,7 @@ PetscErrorCode Observable::SetupTotalSpin(System * sys, MLSDim * mlsdens1_name, 
     //ouput part
     if(sys->LongOut() || sys->PropOut())
     {
-      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupTotalSpin initialized: input: %s %s \n",mlsdens1_name->ToString().c_str(),mlsdens2_name->ToString().c_str()); CHKERRQ(ierr);
+      ierr = PetscPrintf(PETSC_COMM_WORLD,"\nSetupTotalSpin initialized: input: %s %s \n",mlsdens1_name.ToString().c_str(),mlsdens2_name.ToString().c_str()); CHKERRQ(ierr);
     }
     
     

@@ -19,20 +19,19 @@ PetscErrorCode Phononlaser::Setup(Vec * dm, Mat * AA)
 
 
     //set simulation parameter default values
-    N_MLS	=  2;
-
-    PetscInt	dx=2, m0=1, dm0=1;
+    PetscInt	nmls=2,dx=2, m0=1, dm0=1;
 
 
     //set simulation parameter to command line options
-    ierr = PetscOptionsGetInt(NULL,NULL,"-NMLS",&N_MLS,NULL);CHKERRQ(ierr);			//this is the total number of two level systems
+    ierr = PetscOptionsGetInt(NULL,NULL,"-NMLS",&nmls,NULL);CHKERRQ(ierr);			//this is the total number of two level systems
     ierr = PetscOptionsGetInt(NULL,NULL,"-dx",&dx,NULL);CHKERRQ(ierr);				//this is the order of allowed tls system offdiagonals, dx = N_MLS means no truncation, dx > N_MLS will likely crash
     ierr = PetscOptionsGetInt(NULL,NULL,"-m0max",&m0,NULL);CHKERRQ(ierr);			//the maximum phonon number state
     ierr = PetscOptionsGetInt(NULL,NULL,"-dm0max",&dm0,NULL);CHKERRQ(ierr);			//the maximum phonon density matrix offdiagonal order, for large m0 this should be in general smaller than m0
 
 
     //specify dimensions
-    ierr = MLSAddDens(1,N_MLS+1,2.0*hbar); CHKERRQ(ierr);					//this is the TLS density dimension
+    ierr = MLSAdd(nmls); CHKERRQ(ierr);
+    ierr = MLSAddDens(1,nmls+1,2.0*hbar); CHKERRQ(ierr);					//this is the TLS density dimension
     ierr = MLSAddPol(1,0,dx+1); CHKERRQ(ierr);							//two types of TLS offdiagonals
     ierr = MLSAddPol(0,1,dx+1); CHKERRQ(ierr);							//... if you want more levels, just add more dimensions
     ierr = ModeAdd(m0+1,dm0,2.0*hbar); CHKERRQ(ierr);						//and this is the phononmode, if you want more phononmodes call this function multiple times...
@@ -688,7 +687,8 @@ int main(int argc, char **args)
     ierr = TSSetProblemType(ts,TS_LINEAR);CHKERRQ(ierr);				//tell petsc that we solve a linear diff. eq.
     ierr = TSSetType(ts,TSRK);CHKERRQ(ierr);						//set the time stepper to runge kutta
     ierr = TSRKSetType(ts,TSRK3BS);CHKERRQ(ierr);					//set it to 3rd order RK scheme of Bogacki-Shampine with 2nd order embedded method, this is an adaptive step width Runge-Kutta
-    ierr = TSSetDuration(ts,100000,1.e+6);CHKERRQ(ierr);				//set the maximum integration cycles and time
+    ierr = TSSetMaxTime(ts,1.e+6);CHKERRQ(ierr);                                     //set the maximum integration time
+    ierr = TSSetMaxSteps(ts,100000);CHKERRQ(ierr);                                   //set the maximum integration steps
     ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);		//what to do if the final time is not exactly reached with the time stepper, in this case nothing
 
     //adaptivity context for time stepper

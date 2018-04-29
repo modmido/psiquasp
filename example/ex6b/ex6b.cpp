@@ -1,12 +1,12 @@
 
 /**
- * @file	ex6a.cpp
+ * @file	ex6b.cpp
  *
  * @author	Michael Gegg
  * 
  */
  
-#include"ex6a.hpp"
+#include"ex6b.hpp"
 
 
 /*
@@ -28,8 +28,10 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     PetscReal       domega_tls1 = 0.0;
     PetscReal		energy0 = modeenergy + domega_tls0*hbar;
     PetscReal       energy1 = modeenergy + domega_tls1*hbar;
-    PetscReal		gcouple0 = 0.001;
-    PetscReal       gcouple1 = 0.001;
+    PetscReal		gcouple00 = 0.001;
+    PetscReal       gcouple10 = 0.001;
+    PetscReal       gcouple01 = 0.001;
+    PetscReal       gcouple11 = 0.001;
     PetscReal		gamma0 = 0.000001;
     PetscReal       gamma1 = 0.000001;
     PetscReal		kappa = 0.001;
@@ -45,8 +47,10 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     
     ierr = PetscOptionsGetReal(NULL,NULL,"-domega_tls0",&domega_tls0,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-domega_tls1",&domega_tls1,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(NULL,NULL,"-gcouple0",&gcouple0,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(NULL,NULL,"-gcouple1",&gcouple1,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(NULL,NULL,"-gcouple00",&gcouple00,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(NULL,NULL,"-gcouple10",&gcouple10,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(NULL,NULL,"-gcouple01",&gcouple01,NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(NULL,NULL,"-gcouple11",&gcouple11,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-gamma0",&gamma0,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-gamma1",&gamma1,NULL);CHKERRQ(ierr);
     ierr = PetscOptionsGetReal(NULL,NULL,"-kappa",&kappa,NULL);CHKERRQ(ierr);
@@ -56,8 +60,10 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     ierr = AddParam("modeenergy",modeenergy); CHKERRQ(ierr);
     ierr = AddParam("domega_tls0",domega_tls0); CHKERRQ(ierr);
     ierr = AddParam("domega_tls1",domega_tls1); CHKERRQ(ierr);
-    ierr = AddParam("gcouple0",gcouple0); CHKERRQ(ierr);
-    ierr = AddParam("gcouple1",gcouple1); CHKERRQ(ierr);
+    ierr = AddParam("gcouple00",gcouple00); CHKERRQ(ierr);
+    ierr = AddParam("gcouple10",gcouple10); CHKERRQ(ierr);
+    ierr = AddParam("gcouple01",gcouple01); CHKERRQ(ierr);
+    ierr = AddParam("gcouple11",gcouple11); CHKERRQ(ierr);
     ierr = AddParam("gamma0",gamma0); CHKERRQ(ierr);
     ierr = AddParam("gamma1",gamma1); CHKERRQ(ierr);
     ierr = AddParam("kappa",kappa); CHKERRQ(ierr);
@@ -66,7 +72,7 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     //specifying the dimension identifiers
     MultiMLSDim    n11_0 (1,1,0), n10_0 (1,0,0), n01_0 (0,1,0), n00_0 (0,0,0);        //create the four dimension identifiers for the first type of tls
     MultiMLSDim    n11_1 (1,1,1), n10_1 (1,0,1), n01_1 (0,1,1), n00_1 (0,0,1);        //create the four dimension identifiers for the second type of tls
-    ModeDim        mket (0,0), mbra (1,0);
+    ModeDim        mket0 (0,0), mbra0 (1,0), mket1 (0,1), mbra1 (1,1);
     
     //creating the neccessary dimensions
     ierr = MLSAddMulti(ntls0); CHKERRQ(ierr);                       //first type of tls
@@ -79,7 +85,8 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     ierr = MLSAddPol(n10_1,dx1+1); CHKERRQ(ierr);                  //
     ierr = MLSAddPol(n01_1,dx1+1); CHKERRQ(ierr);                  //
     
-    ierr = ModeAdd(m0+1,dm0,modeenergy);CHKERRQ(ierr);              //single bosonic mode
+    ierr = ModeAdd(m0+1,dm0,modeenergy);CHKERRQ(ierr);              //two bosonic modes
+    ierr = ModeAdd(m0+1,dm0,modeenergy);CHKERRQ(ierr);              //
     
     //setup internal structure like the index and parallel layout and create vector for density matrix and matrix for Liouvillian
     ierr = PQSPSetup(dm,1,AA);CHKERRQ(ierr);
@@ -87,7 +94,7 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     index->PrintBlockSizes();
     
     //write start values into the density matrix
-    PetscInt	qnumbers [8] = {2,0,0,0,0,0,0,0};                  //first tls type has a single excitation
+    PetscInt	qnumbers [10] = {2,0,0,0,0,0,0,0,0,0};                  //first tls type has a single excitation
     ierr = DMWritePureState(*dm,qnumbers);CHKERRQ(ierr);
     
     
@@ -98,15 +105,25 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     ierr = AddMLSH0(*AA,d_nnz,o_nnz,0,n10_0,1.0);CHKERRQ(ierr);
     ierr = AddMLSH0(*AA,d_nnz,o_nnz,0,n10_1,1.0);CHKERRQ(ierr);
     
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_0,n10_0,mket,1.0);CHKERRQ(ierr);           //the interaction of the frist kind of tls with the radiation mode
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n01_0,n11_0,mket,1.0);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_0,n01_0,mbra,1.0);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n10_0,n11_0,mbra,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_0,n10_0,mket0,1.0);CHKERRQ(ierr);           //the interaction of the frist kind of tls with the first radiation mode
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n01_0,n11_0,mket0,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_0,n01_0,mbra0,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n10_0,n11_0,mbra0,1.0);CHKERRQ(ierr);
     
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_1,n10_1,mket,1.0);CHKERRQ(ierr);           //the interaction of the second kind of tls with the radiation mode
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n01_1,n11_1,mket,1.0);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_1,n01_1,mbra,1.0);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n10_1,n11_1,mbra,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_1,n10_1,mket0,1.0);CHKERRQ(ierr);           //the interaction of the second kind of tls with the first radiation mode
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n01_1,n11_1,mket0,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_1,n01_1,mbra0,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n10_1,n11_1,mbra0,1.0);CHKERRQ(ierr);
+    
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_0,n10_0,mket1,1.0);CHKERRQ(ierr);           //the interaction of the frist kind of tls with the second radiation mode
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n01_0,n11_0,mket1,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_0,n01_0,mbra1,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n10_0,n11_0,mbra1,1.0);CHKERRQ(ierr);
+    
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_1,n10_1,mket1,1.0);CHKERRQ(ierr);           //the interaction of the second kind of tls with the second radiation mode
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n01_1,n11_1,mket1,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n00_1,n01_1,mbra1,1.0);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,0,n10_1,n11_1,mbra1,1.0);CHKERRQ(ierr);
     
     ierr = AddLindbladRelaxMLS(*AA,d_nnz,o_nnz,0,n11_0,n00_0,1.0);CHKERRQ(ierr);          //spontaneous emission of the first type of tls
     ierr = AddLindbladDephMLS(*AA,d_nnz,o_nnz,0,n10_0,1.0);CHKERRQ(ierr);
@@ -126,15 +143,25 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     ierr = AddMLSH0(*AA,d_nnz,o_nnz,1,n10_0,domega_tls0*PETSC_i);CHKERRQ(ierr);
     ierr = AddMLSH0(*AA,d_nnz,o_nnz,1,n10_1,domega_tls1*PETSC_i);CHKERRQ(ierr);
     
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_0,n10_0,mket,gcouple0*PETSC_i);CHKERRQ(ierr);           //the interaction of the frist kind of tls with the radiation mode
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n01_0,n11_0,mket,gcouple0*PETSC_i);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_0,n01_0,mbra,-gcouple0*PETSC_i);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n10_0,n11_0,mbra,-gcouple0*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_0,n10_0,mket0,gcouple00*PETSC_i);CHKERRQ(ierr);           //the interaction of the frist kind of tls with the first radiation mode
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n01_0,n11_0,mket0,gcouple00*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_0,n01_0,mbra0,-gcouple00*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n10_0,n11_0,mbra0,-gcouple00*PETSC_i);CHKERRQ(ierr);
     
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_1,n10_1,mket,gcouple1*PETSC_i);CHKERRQ(ierr);           //the interaction of the second kind of tls with the radiation mode
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n01_1,n11_1,mket,gcouple1*PETSC_i);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_1,n01_1,mbra,-gcouple1*PETSC_i);CHKERRQ(ierr);
-    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n10_1,n11_1,mbra,-gcouple1*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_1,n10_1,mket0,gcouple10*PETSC_i);CHKERRQ(ierr);           //the interaction of the second kind of tls with the first radiation mode
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n01_1,n11_1,mket0,gcouple10*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_1,n01_1,mbra0,-gcouple10*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n10_1,n11_1,mbra0,-gcouple10*PETSC_i);CHKERRQ(ierr);
+    
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_0,n10_0,mket1,gcouple01*PETSC_i);CHKERRQ(ierr);           //the interaction of the frist kind of tls with the second radiation mode
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n01_0,n11_0,mket1,gcouple01*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_0,n01_0,mbra1,-gcouple01*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n10_0,n11_0,mbra1,-gcouple01*PETSC_i);CHKERRQ(ierr);
+    
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_1,n10_1,mket1,gcouple11*PETSC_i);CHKERRQ(ierr);           //the interaction of the second kind of tls with the second radiation mode
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n01_1,n11_1,mket1,gcouple11*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n00_1,n01_1,mbra1,-gcouple11*PETSC_i);CHKERRQ(ierr);
+    ierr = AddMLSModeInt(*AA,d_nnz,o_nnz,1,n10_1,n11_1,mbra1,-gcouple11*PETSC_i);CHKERRQ(ierr);
     
     ierr = AddLindbladRelaxMLS(*AA,d_nnz,o_nnz,1,n11_0,n00_0,gamma0/2.0);CHKERRQ(ierr);                //spontaneous emission of the first type of tls
     ierr = AddLindbladDephMLS(*AA,d_nnz,o_nnz,1,n10_0,gamma0/2.0);CHKERRQ(ierr);
@@ -296,6 +323,8 @@ PetscErrorCode CorrelationsFile::SetupMyGnFile(TwoTLS * sys, std::string name)
     Gnfct	        *n110thirdorder		= new Gnfct();
     Gnfct           *n111secorder       = new Gnfct();
     Gnfct           *n111thirdorder     = new Gnfct();
+    InterGOne       *gone               = new InterGOne();
+    InterGTwo       *gtwo               = new InterGTwo();
     
     
     //dof identifiers
@@ -321,11 +350,141 @@ PetscErrorCode CorrelationsFile::SetupMyGnFile(TwoTLS * sys, std::string name)
     ierr = n111thirdorder->SetupMLSGnfct(sys,n01_1,3);CHKERRQ(ierr);            //computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3
     ierr = AddElem(n111thirdorder,"g(3)(n11)");CHKERRQ(ierr);
     
+    ierr = gone->Setup(sys);
+    ierr = AddElem(gone,"gone inter");CHKERRQ(ierr);
+
+    ierr = gtwo->Setup(sys);
+    ierr = AddElem(gtwo,"gtwo inter");CHKERRQ(ierr);
+    
     ierr = MakeHeaderTEV();CHKERRQ(ierr);
     
     PetscFunctionReturn(0);
 }
 
+
+/**
+ *  @brief      Setup function for the inter TLS gone function, which is the square root of the gtwo denominator
+ */
+
+#undef __FUNCT__
+#define __FUNCT__ "Setup"
+
+PetscErrorCode InterGOne::Setup(TwoTLS* sys)
+{
+    PetscFunctionBeginUser;
+    PetscErrorCode    ierr;
+    
+    Mat     lower,raise,mult;
+    
+    ierr = sys->MatJ10Left(&lower); CHKERRQ(ierr);        //corresponds to J_{10,0} \rho
+    
+    ierr = MatHermitianTranspose(lower,MAT_INITIAL_MATRIX,&raise); CHKERRQ(ierr);
+    
+    ierr = MatMatMult(raise,lower,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult); CHKERRQ(ierr);    //this results in J_{10,0}  \rho
+    
+    ierr = GenerateLeft(sys,mult);CHKERRQ(ierr);        //this creates a vector corresponding to mult^\dagger |tr>
+    
+    isherm = 1;                            //flag that tells psiquasp that the matrix is not hermitian, i.e. the observable not necessarily real valued and that we want real and imaginary value plotted into the ouput file
+    
+    ierr = MatDestroy(&lower);CHKERRQ(ierr);            //these are not needed anymore
+    ierr = MatDestroy(&raise);CHKERRQ(ierr);
+    ierr = MatDestroy(&mult);CHKERRQ(ierr);
+    
+    PetscFunctionReturn(0);
+}
+
+
+/**
+ *  @brief      Setup function for the inter TLS gtwo function numerator
+ */
+
+#undef __FUNCT__
+#define __FUNCT__ "Setup"
+
+PetscErrorCode InterGTwo::Setup(TwoTLS* sys)
+{
+    PetscFunctionBeginUser;
+    PetscErrorCode    ierr;
+    
+    Mat     lower,lower2,raise,mult,mult2,mult3;
+    
+    ierr = sys->MatJ10Left(&lower); CHKERRQ(ierr);        //corresponds to J_{10,0} \rho
+    ierr = sys->MatJ10Left(&lower2); CHKERRQ(ierr);        //corresponds to J_{10,0} \rho
+    
+    ierr = MatHermitianTranspose(lower,MAT_INITIAL_MATRIX,&raise); CHKERRQ(ierr);
+    
+    ierr = MatMatMult(lower2,lower,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult); CHKERRQ(ierr);      //this results in J_{10,0}  \rho
+    ierr = MatMatMult(raise,mult,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult2); CHKERRQ(ierr);       //this results in J_{10,0}  \rho
+    ierr = MatMatMult(raise,mult2,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult3); CHKERRQ(ierr);      //this results in J_{10,0}  \rho
+    
+    ierr = GenerateLeft(sys,mult3);CHKERRQ(ierr);        //this creates a vector corresponding to mult^\dagger |tr>
+    
+    isherm = 1;                            //flag that tells psiquasp that the matrix is not hermitian, i.e. the observable not necessarily real valued and that we want real and imaginary value plotted into the ouput file
+    
+    ierr = MatDestroy(&lower);CHKERRQ(ierr);            //these are not needed anymore
+    ierr = MatDestroy(&lower2);CHKERRQ(ierr);
+    ierr = MatDestroy(&raise);CHKERRQ(ierr);
+    ierr = MatDestroy(&mult);CHKERRQ(ierr);
+    ierr = MatDestroy(&mult2);CHKERRQ(ierr);
+    ierr = MatDestroy(&mult3);CHKERRQ(ierr);
+    
+    PetscFunctionReturn(0);
+}
+
+#undef __FUNCT__
+#define __FUNCT__ "MatJ10Left"
+
+/**
+ * @brief    Creates a Matrix that corresponds to the collective lowering operators of both TLS added, i.e. AA = J_{01,0} + J_{01,1}
+ *
+ * @param    AA             the Liouvillan matrix
+ *
+ */
+
+PetscErrorCode TwoTLS::MatJ10Left(Mat* AA)
+{
+    PetscFunctionBeginUser;
+    PetscErrorCode    ierr;
+    
+    PetscInt            *d_nnz    = new PetscInt [loc_size] ();
+    PetscInt            *o_nnz    = new PetscInt [loc_size] ();
+    MultiMLSDim         n11_0 (1,1,0), n10_0 (1,0,0), n01_0 (0,1,0), n00_0 (0,0,0);
+    MultiMLSDim         n11_1 (1,1,1), n10_1 (1,0,1), n01_1 (0,1,1), n00_1 (0,0,1);
+    
+    
+    //create matrix
+    ierr = PQSPCreateMat(AA); CHKERRQ(ierr);
+    
+    
+    //preallocation
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n10_0,n00_0,1.0); CHKERRQ(ierr);        //Jl_{10,0}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n11_0,n01_0,1.0); CHKERRQ(ierr);        //...
+    
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n10_1,n00_1,1.0); CHKERRQ(ierr);        //Jl_{10,1}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n11_1,n01_1,1.0); CHKERRQ(ierr);        //...
+    
+    ierr = MatMPIAIJSetPreallocation(*AA,0,d_nnz,0,o_nnz); CHKERRQ(ierr);            //parallel
+    ierr = MatSeqAIJSetPreallocation(*AA,0,d_nnz); CHKERRQ(ierr);                //and sequential
+    
+    
+    //allocation
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n10_0,n00_0,1.0); CHKERRQ(ierr);        //Jl_{10,0}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n11_0,n01_0,1.0); CHKERRQ(ierr);        //...
+    
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n10_1,n00_1,1.0); CHKERRQ(ierr);        //Jl_{10,1}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n11_1,n01_1,1.0); CHKERRQ(ierr);        //...
+    
+    ierr = MatAssemblyBegin(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);                //Assemble the matrix
+    ierr = MatAssemblyEnd(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);                //
+    
+    
+    //clean up
+    delete[] d_nnz;
+    delete[] o_nnz;
+    
+    
+    PetscFunctionReturn(0);
+}
 
 /*
  * User provided main function. Calls the setup routines, the computation stage then solely relies on Petsc.

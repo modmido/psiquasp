@@ -37,7 +37,7 @@
  * 
  */
 
-PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim * mlselem, PetscScalar matrixelem)
+PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim& mlselem, PetscScalar matrixelem)
 {
     PetscFunctionBeginUser;
     
@@ -47,7 +47,7 @@ PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, P
     //finding the dimensions
     PetscInt elem=0;
     
-    ierr = FindMatch(mlselem,&elem); CHKERRQ(ierr);
+    ierr = FindMatch(&mlselem,&elem); CHKERRQ(ierr);
     
     
     //loop part  
@@ -82,13 +82,13 @@ PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, P
     {
       if(!choose)
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowNonconnecting preassembly completed:\n  input %s\n",mlselem->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowNonconnecting preassembly completed:\n  input %s\n",mlselem.ToString().c_str()); CHKERRQ(ierr);
           ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
           PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
       }
       else
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowNonconnecting assembly completed.\n  input %s\n",mlselem->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowNonconnecting assembly completed.\n  input %s\n",mlselem.ToString().c_str()); CHKERRQ(ierr);
       }
     }
     
@@ -112,7 +112,7 @@ PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, P
  * 
  */
 
-PetscErrorCode	System::AddMLSSingleArrowConnecting(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim * mlsstart, MLSDim * mlsgoal, PetscScalar matrixelem)
+PetscErrorCode	System::AddMLSSingleArrowConnecting(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlsstart, MLSDim& mlsgoal, PetscScalar matrixelem)
 {
     PetscFunctionBeginUser;
     PetscErrorCode	ierr;
@@ -122,8 +122,8 @@ PetscErrorCode	System::AddMLSSingleArrowConnecting(Mat AA, PetscInt * d_nnz, Pet
     PetscInt start=0, goal=0, type=0;
     
     ierr = SameType(mlsstart,mlsgoal,&type); CHKERRQ(ierr);            //sanity check and get mls type number
-    ierr = FindMatch(mlsstart,&start); CHKERRQ(ierr);
-    ierr = FindMatch(mlsgoal,&goal); CHKERRQ(ierr);
+    ierr = FindMatch(&mlsstart,&start); CHKERRQ(ierr);
+    ierr = FindMatch(&mlsgoal,&goal); CHKERRQ(ierr);
     
     
     //loop part
@@ -234,13 +234,13 @@ PetscErrorCode	System::AddMLSSingleArrowConnecting(Mat AA, PetscInt * d_nnz, Pet
     {
       if(!choose)
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowConnecting preassembly completed:\n  input %s %s",mlsstart->ToString().c_str(),mlsgoal->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowConnecting preassembly completed:\n  input %s %s",mlsstart.ToString().c_str(),mlsgoal.ToString().c_str()); CHKERRQ(ierr);
           ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
           PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
       }
       else
       {
-          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowConnecting assembly completed.\n  input %s %s",mlsstart->ToString().c_str(),mlsgoal->ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowConnecting assembly completed.\n  input %s %s",mlsstart.ToString().c_str(),mlsgoal.ToString().c_str()); CHKERRQ(ierr);
       }
     }
     
