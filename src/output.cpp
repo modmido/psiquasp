@@ -108,7 +108,19 @@ PetscErrorCode OFile::WriteSystemParameters(System * sys)
   //-------------------------------------------------------------------------------------
   //general information
   //-------------------------------------------------------------------------------------
-    ierr = PetscFPrintf(PETSC_COMM_WORLD,file,"#System: %d %d-level-systems, %d mls dofs, %d modes\n\n",sys->NMls(),sys->NLevels(),sys->NumMlsdims(),sys->NumModes());CHKERRQ(ierr);
+    if( sys->NDMLS() == 1 )
+    {
+        ierr = PetscFPrintf(PETSC_COMM_WORLD,file,"#System: %d %d-level-systems, %d mls dimensions, %d modes\n\n",sys->NMls(0),sys->NLevels(0),sys->NumMlsdims(),sys->NumModes());CHKERRQ(ierr);
+    }
+    else if( sys->NDMLS() > 1 )
+    {
+        ierr = PetscFPrintf(PETSC_COMM_WORLD,file,"#System: %d different types of mls: ",sys->NDMLS()); CHKERRQ(ierr);
+        for(i=0; i < sys->NDMLS(); i++)
+        {
+            ierr = PetscFPrintf(PETSC_COMM_WORLD,file,"%d %d-level-systems, %d mls dimensions; ",sys->NMls(i),sys->NLevels(i),sys->NumMlsdims(i));CHKERRQ(ierr);
+        }
+        ierr = PetscFPrintf(PETSC_COMM_WORLD,file," %d modes\n\n",sys->NumModes());CHKERRQ(ierr);
+    }
     
     
   //-------------------------------------------------------------------------------------
@@ -510,7 +522,7 @@ PetscErrorCode DistFile::MakeHeaderGen(std::string var)
  * 
  */
 
-PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename, MLSDim mlsdens)
+PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename, MLSDim& mlsdens)
 {
     PetscFunctionBeginUser;
     
@@ -550,7 +562,7 @@ PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename,
  * 
  */
 
-PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim mlspol, PetscInt number)
+PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim& mlspol, PetscInt number)
 {
     PetscFunctionBeginUser;
     
@@ -584,8 +596,8 @@ PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string fi
 /**
  * @brief	Setup for the mode distribution file. This function has return type PetscErrorCode for Petsc error handling, which is why I prefer this instead of a constructor.
  * 
- * @param	system		the system specification object (polymorphic). Needed mainly for the header.
- * @param	mode		the name of the mode.
+ * @param	system		    the system specification object (polymorphic). Needed mainly for the header.
+ * @param	modenumber		the name of the mode.
  * 
  */
 
@@ -629,7 +641,7 @@ PetscErrorCode DistFile::SetupModeDistFile(System * system, std::string name, Pe
  * 
  */
 
-PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename, MLSDim mlsdens, std::string var)
+PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename, MLSDim& mlsdens, std::string var)
 {
     PetscFunctionBeginUser;
     
@@ -669,7 +681,7 @@ PetscErrorCode DistFile::SetupMLSDistFile(System * system, std::string filename,
  * 
  */
 
-PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim mlspol, PetscInt number, std::string var)
+PetscErrorCode DistFile::SetupMLSOffdiagDistFile(System * system, std::string filename, MLSDim& mlspol, PetscInt number, std::string var)
 {
     PetscFunctionBeginUser;
     

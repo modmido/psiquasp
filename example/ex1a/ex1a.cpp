@@ -65,9 +65,9 @@ void OTC::Setup(Vec* dm, Mat* AA)
 void MyOut::SetupMyOut(OTC * system)
 {
     //allocate all files that should be in the output
-    ObservablesFile	*obsfile	= new ObservablesFile;
-    DistFile		*n11file	= new DistFile;
-    DistFile		*m0file		= new DistFile;
+    ObservablesFile	    *obsfile	= new ObservablesFile;
+    DistFile		    *n11file	= new DistFile;
+    DistFile		    *m0file		= new DistFile;
     CorrelationsFile	*gnfile		= new CorrelationsFile;
     
     
@@ -128,10 +128,10 @@ void ObservablesFile::SetupMyObsFile(OTC * system, std::string name)
     pdens00->SetupMlsOccupation(system,n00);			//computes the mean occupation in the lower TLS level
     AddElem(pdens00,"<J_00>\t");
     
-    ppol10->SetupMlsPolarization(system,n10,2.0/hbar);		//computes the <J_{10}> expectation value, this is not hermitian, so PsiQuaSP prints real and imaginary part by default 
+    ppol10->SetupMlsPolarization(system,n10,2.0/hbar);		//computes the <J_{10}> expectation value, this is not hermitian, so PsiQuaSP prints real and imaginary part by default
     AddElem(ppol10,"Re<J_10>\t\tIm<J_10>");
     
-    ppol01->SetupMlsPolarization(system,n01,-2.0/hbar);		//computes the <J_{01}> expectation value, 
+    ppol01->SetupMlsPolarization(system,n01,-2.0/hbar);		//computes the <J_{01}> expectation value,
     AddElem(ppol01,"Re<J_01>\t\tIm<J_01>");
     
     pmodeocc->SetupModeOccupation(system,0);			//computes the <b^\dagger b> mode occupation expectation value, there is an internal error check for the real valuedness of expectation values of hermitian operators
@@ -174,7 +174,7 @@ void CorrelationsFile::SetupMyGnFile(OTC * sys, std::string name)
     mode0thirdorder->SetupModeGnfct(sys,0,3);			//computes g^(2) = <b^\dagger b^\dagger b^\dagger b b b>/<b^\dagger b>^3 
     AddElem(mode0thirdorder,"g(3)(m0)"); 
     
-    n11secorder->SetupMLSGnfct(sys,n01,2); 			//computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2 
+    n11secorder->SetupMLSGnfct(sys,n01,2); 			//computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2
     AddElem(n11secorder,"g(2)(n11)"); 
     
     n11thirdorder->SetupMLSGnfct(sys,n01,3); 			//computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3  
@@ -210,8 +210,6 @@ int main(int argc, char **args)
     out->SetupMyOut(&twolevel);
     
     
-    
-    
     //computing stage: use the Petsc ODE utilities to solve the problem using explicit Runge-Kutta time integration
     TS		ts;							//time stepper
     TSAdapt	adapt;							//adaptive time step context
@@ -221,7 +219,8 @@ int main(int argc, char **args)
     TSSetProblemType(ts,TS_LINEAR);					//tell petsc that we solve a linear diff. eq.
     TSSetType(ts,TSRK);							//set the time stepper to runge kutta
     TSRKSetType(ts,TSRK4);						//set it to 4 step runge kutta
-    TSSetDuration(ts,100000,1.e+6);					//set the maximum integration cycles and time
+    TSSetMaxTime(ts,1.e+6);                                     //set the maximum integration time
+    TSSetMaxSteps(ts,100000);                                   //set the maximum integration steps
     TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);			//what to do if the final time is not exactly reached with the time stepper, in this case nothing
     
     //adaptivity context for time stepper
@@ -247,7 +246,7 @@ int main(int argc, char **args)
     //clean up stage: free everything that is not needed anymore
     MatDestroy(&AA); 
     VecDestroy(&dm); 
-    TSDestroy(&ts); 
+    //TSDestroy(&ts);
     delete out;
     
     PetscFinalize(); 

@@ -2,7 +2,7 @@
 /**
  * @file	sutil.cpp
  * 
- * 		Definition of the general System class methods except for the Liouvillian methods.
+ * 		    Definition of the general System class methods except for the Liouvillian methods.
  * 
  * @author	Michael Gegg
  * 
@@ -30,10 +30,11 @@ System::System ()
 {
     num_dims		= 0;
     num_mlsdims		= 0;
-    num_mlsdens		= 0;
     num_modes		= 0;
     loc_size		= 0;
-    N_MLS		= 0;
+    N_D_MLS		    = 0;
+    useMulti        = 0;        //used for sanity check
+    useSingle       = 0;
     
     parallel_layout	= 0;
     modesetup		= 0;
@@ -69,12 +70,111 @@ System::~System()
 //-------------------------------------------------------------------------------------------------
 
 #undef __FUNCT__
+#define __FUNCT__ "MLSAdd"
+
+/**
+ * @brief    Adds a single type of mls. Only used when one type of mls is used.
+ *
+ * @param    nmls        the number of individual mls of this type
+ *
+ */
+
+PetscErrorCode System::MLSAdd(PetscInt nmls)
+{
+    PetscFunctionBeginUser;
+    
+    if ( useSingle == 1 )             // has there been a prior call to MLSAdd?
+    {
+        (*PetscErrorPrintf)("Mutliple calls to MLSAdd() are not allowed. Use MLSAddMulti() for different types of MLS!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    else if( useMulti == 1 || N_D_MLS > 0 )          // is there already another type of mls set?
+    {
+        (*PetscErrorPrintf)("Cannot mix MLSAdd() and MLSAddMulti() function calls!\n");
+        (*PetscErrorPrintf)("If you want to use multiple mls types use MLSAddMulti() only!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    else if ( modesetup )       // have there been already calls to ModeAdd()? Not allowed!
+    {
+        (*PetscErrorPrintf)("Cannot mix MLS and Mode dimension setup functions!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    else
+    {
+        N_MLS[N_D_MLS]          = nmls;
+        useSingle               = 1;
+        N_D_MLS++;
+    }
+    
+    PetscFunctionReturn(0);
+}
+
+
+#undef __FUNCT__
+#define __FUNCT__ "MLSAddMulti"
+
+/**
+ * @brief    Adds a different type of mls. Not needed when only one type of mls is considered.
+ *
+ * @param    nmls        the number of individual mls of this type
+ *
+ */
+
+PetscErrorCode System::MLSAddMulti(PetscInt nmls)
+{
+    PetscFunctionBeginUser;
+    
+    if( N_D_MLS == MAX_D_MLS )        //is the allowed maximum of different mls reached?
+    {
+        (*PetscErrorPrintf)("Maximum number of different MLS types reached!\n");
+        (*PetscErrorPrintf)("If you need to use more different types of mls then increase the MAX_D_MLS preprocessor constant in system.hpp.\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MAX_VALUE,"");
+    }
+    else if( useMulti == 1 || N_D_MLS > 0 )             // has there been a prior call to MLSAddMulti()
+    {
+        if ( multiMLS_start[N_D_MLS-1] == num_dims )    // are there two consecutive calls to MLSAdd without adding any dimensions in between?
+        {
+            (*PetscErrorPrintf)("Two consecutive calls to MLSAddMulti() without adding any mls dimenstions in between!\n");
+            (*PetscErrorPrintf)("Maybe you have forgotten to add the MLS dimensions. Or remove one call to MLSAddMulti().\n");
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MAX_VALUE,"");
+        }
+        if ( modesetup )                                // have there been already calls to ModeAdd()? Not allowed!
+        {
+            (*PetscErrorPrintf)("Cannot mix MLS and Mode dimension setup functions!\n");
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
+        if( useSingle == 1 )
+        {
+            (*PetscErrorPrintf)("Cannot mix MLSAdd() and MLSAddMulti() function calls!\n");
+            (*PetscErrorPrintf)("If you want to use multiple mls types use MLSAddMulti() only!\n");
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
+        else                                        //everything seems to be legit, so proceed
+        {
+            N_MLS[N_D_MLS]          = nmls;         //maximum number of mls for this type
+            multiMLS_start[N_D_MLS] = num_dims;     //the index of the first dimension for this kind
+            N_D_MLS++;                              //raise the number of different types by one
+        }
+    }
+    else                                        //everything seems to be legit, so proceed
+    {
+        useMulti                = 1;
+        N_MLS[N_D_MLS]          = nmls;         //maximum number of mls for this type
+        multiMLS_start[N_D_MLS] = num_dims;     //the index of the first dimension for this kind
+        N_D_MLS++;                              //raise the number of different types by one
+    }
+    
+    PetscFunctionReturn(0);
+}
+
+
+#undef __FUNCT__
 #define __FUNCT__ "MLSAddDens"
 
 /**
  * @brief	Adds a mls density dimension.
  * 
- * @param	ketbra		the order of the density, i.e. the number of the ket and bra of the projector 
+ * @param	n   		the order of the density, i.e. the number of the ket and bra of the projector
  * @param	length		the length of the dim.
  * @param	energy		optional energy value for corresponding level. Only needed for thermal start values of the density matrix.
  * 
@@ -89,22 +189,32 @@ PetscErrorCode System::MLSAddDens(PetscInt n, PetscInt length, PetscReal energy)
       (*PetscErrorPrintf)("Cannot mix MLS and Mode dimension setup functions!\n");
       SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
+    else if ( N_D_MLS > 1 )
+    {
+        (*PetscErrorPrintf)("More than one type of MLS in use. Please use the System::MLSAddDens(MLSDim * indim, PetscInt length, PetscReal energy) function instead!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    else if ( N_D_MLS == 0 )
+    {
+        (*PetscErrorPrintf)("Please call MLSAdd() before adding any dimensions!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
     else
     {
-      if( length <= N_MLS+1 )
+      if( length <= N_MLS[N_D_MLS-1] +1 )    //during setup the current MLS number maximum is called like this
       { 
-	MLSDim	*dim = new MLSDim (n,n,0,length,energy);
+          MLSDim	*dim = new MLSDim (n,n,0,length,energy);
 	
-	dimensions.push_back(dim);
-	num_mlsdens++;
-	num_mlsdims++;
-	num_dims++;
+          dimensions.push_back(dim);
+          num_mlsdens[N_D_MLS-1]++;
+          num_mlsdims++;
+          num_dims++;
       }
       else
       {
-	(*PetscErrorPrintf)("Invalid input for mls density:\n");
-	(*PetscErrorPrintf)("Current entry is: n(%d,%d) with length %d (MLS+1 = %d)\n",n,n,length,N_MLS+1);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+          (*PetscErrorPrintf)("Invalid input for mls density:\n");
+          (*PetscErrorPrintf)("Current entry is: n(%d,%d) with length %d (MLS+1 = %d)\n",n,n,length,N_MLS[N_D_MLS-1]+1);
+          SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
     }
     
@@ -118,7 +228,7 @@ PetscErrorCode System::MLSAddDens(PetscInt n, PetscInt length, PetscReal energy)
 /**
  * @brief	Adds a mls density dimension.
  * 
- * @param	dim		the dimension
+ * @param	indim		the dimension
  * @param	length		the length of the dim.
  * @param	energy		optional energy value for corresponding level. Only needed for thermal start values of the density matrix.
  * 
@@ -128,28 +238,66 @@ PetscErrorCode System::MLSAddDens(MLSDim& indim, PetscInt length, PetscReal ener
 {
     PetscFunctionBeginUser;
     
+    MLSDim         *single  = dynamic_cast<MLSDim*> (&indim);
+    MultiMLSDim    *multi   = dynamic_cast<MultiMLSDim*> (&indim);
+    
     if( modesetup )
     {
       (*PetscErrorPrintf)("Cannot mix MLS and Mode dimension setup functions!\n");
       SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
-    else
+    else if ( N_D_MLS == 0 )
     {
-      if( length <= N_MLS+1 && indim.IsDensity() )
-      { 
-	MLSDim	*dim = new MLSDim (indim,0,length,energy);
+        (*PetscErrorPrintf)("Please call MLSAdd() or MLSAddMulti() before adding any dimensions!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    else if ( single && !multi )
+    {
+        if( N_D_MLS > 1 )
+        {
+            (*PetscErrorPrintf)("Use of MLSDim identifier together with multiple types of MLS.\n");
+            (*PetscErrorPrintf)("Please use MultiMLSDim instead.\n");
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
+        else if( length <= N_MLS[N_D_MLS-1]+1 && indim.IsDensity() )   //during setup the current MLS number maximum is called like this
+        {
+          MLSDim	*dim = new MLSDim (indim,0,length,energy);
 	
-	dimensions.push_back(dim);
-	num_mlsdens++;
-	num_mlsdims++;
-	num_dims++;
-      }
-      else
-      {
-	(*PetscErrorPrintf)("Invalid input for mls density:\n");
-	(*PetscErrorPrintf)("Current entry is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS+1);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
-      }
+          dimensions.push_back(dim);
+          num_mlsdens[N_D_MLS-1]++;
+          num_mlsdims++;
+          num_dims++;
+        }
+        else
+        {
+          (*PetscErrorPrintf)("Invalid input for mls density:\n");
+          (*PetscErrorPrintf)("Current input is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS[N_D_MLS-1]+1);
+          SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
+    }
+    else if ( multi )
+    {
+        if( useMulti == 0 )
+        {
+            (*PetscErrorPrintf)("Use of MultiMLSDim identifier together with single MLS type operation aka. MLSAdd() call.\n");
+            (*PetscErrorPrintf)("Please use MLSDim instead.\n");
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
+        else if( length <= N_MLS[N_D_MLS-1]+1 && indim.IsDensity() )   //during setup the current MLS number maximum is called like this
+        {
+            MultiMLSDim    *dim = new MultiMLSDim (*multi,0,length,energy);
+            
+            dimensions.push_back(dim);
+            num_mlsdens[N_D_MLS-1]++;
+            num_mlsdims++;
+            num_dims++;
+        }
+        else
+        {
+            (*PetscErrorPrintf)("Invalid input for mls density:\n");
+            (*PetscErrorPrintf)("Current input is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS[N_D_MLS-1]+1);
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
     }
     
     PetscFunctionReturn(0);
@@ -162,7 +310,8 @@ PetscErrorCode System::MLSAddDens(MLSDim& indim, PetscInt length, PetscReal ener
 /**
  * @brief	Adds a mls polarization dimension.
  * 
- * @param	name	the name of the dimension.
+ * @param	ket 	the number of the dimension.
+ * @param   bra     the number of the dimension.
  * @param	length	the length of the dimension.
  * 
  */
@@ -176,22 +325,31 @@ PetscErrorCode System::MLSAddPol(PetscInt ket, PetscInt bra, PetscInt length)
       (*PetscErrorPrintf)("Cannot mix MLS and Mode dimension setup functions!\n");
       SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
+    else if ( N_D_MLS > 1 )
+    {
+        (*PetscErrorPrintf)("More than one type of MLS in use. Please use the System::MLSAddPol(MLSDim * indim, PetscInt length, PetscReal energy) function instead!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    else if ( N_D_MLS == 0 )
+    {
+        (*PetscErrorPrintf)("Please call MLSAdd() before adding any dimensions!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
     else
     {
-      if( length <= N_MLS+1 )
+      if( length <= N_MLS[N_D_MLS-1]+1 )
       {
-	MLSDim	*dim = new MLSDim (ket,bra,1,length,0.0);
+          MLSDim	*dim = new MLSDim (ket,bra,1,length,0.0);
 	
-	dimensions.push_back(dim);
-	num_mlsdims++;
-	num_dims++;
+          dimensions.push_back(dim);
+          num_mlsdims++;
+          num_dims++;
       }
       else
       {
-	(*PetscErrorPrintf)("Invalid input for mls polarization!\n");
-	(*PetscErrorPrintf)("Either wrong name or size.\n");
-	(*PetscErrorPrintf)("Current entry is: n(%d,%d) with length %d (MLS+1 = %d)\n",ket,bra,length,N_MLS+1);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+          (*PetscErrorPrintf)("Invalid input for mls polarization!\n");
+          (*PetscErrorPrintf)("Current input is: n(%d,%d) with length %d (MLS+1 = %d)\n",ket,bra,length,N_MLS[N_D_MLS-1]+1);
+          SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
     }
     
@@ -205,7 +363,7 @@ PetscErrorCode System::MLSAddPol(PetscInt ket, PetscInt bra, PetscInt length)
 /**
  * @brief	Adds a mls polarization dimension.
  * 
- * @param	name	the name of the dimension.
+ * @param	indim	the MLSDim identifier.
  * @param	length	the length of the dimension.
  * 
  */
@@ -214,28 +372,64 @@ PetscErrorCode System::MLSAddPol(MLSDim& indim, PetscInt length)
 {
     PetscFunctionBeginUser;
     
+    MLSDim         *single  = dynamic_cast<MLSDim*> (&indim);
+    MultiMLSDim    *multi   = dynamic_cast<MultiMLSDim*> (&indim);
+    
     if( modesetup )
     {
       (*PetscErrorPrintf)("Cannot mix MLS and Mode dimension setup functions!\n");
       SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
-    else
+    else if ( N_D_MLS == 0 )
     {
-      if( length <= N_MLS+1 && !indim.IsDensity() )
-      {
-	MLSDim	*dim = new MLSDim (indim,1,length,0.0);
+        (*PetscErrorPrintf)("Please call MLSAdd() or MLSAddMulti() before adding any dimensions!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    else if ( single && !multi )
+    {
+        if( N_D_MLS > 1 )
+        {
+            (*PetscErrorPrintf)("Use of MLSDim identifier together with multiple types of MLS.\n");
+            (*PetscErrorPrintf)("Please use MultiMLSDim instead.\n");
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
+        else if( length <= N_MLS[N_D_MLS-1]+1 && !indim.IsDensity() )
+        {
+            MLSDim	*dim = new MLSDim (indim,1,length,0.0);
 	
-	dimensions.push_back(dim);
-	num_mlsdims++;
-	num_dims++;
-      }
-      else
-      {
-	(*PetscErrorPrintf)("Invalid input for mls polarization!\n");
-	(*PetscErrorPrintf)("Either wrong name or size.\n");
-	(*PetscErrorPrintf)("Current entry is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS+1);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
-      }
+            dimensions.push_back(dim);
+            num_mlsdims++;
+            num_dims++;
+        }
+        else
+        {
+            (*PetscErrorPrintf)("Invalid input for mls polarization!\n");
+            (*PetscErrorPrintf)("Current input is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS[N_D_MLS-1]+1);
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
+    }
+    else if ( multi )
+    {
+        if( useMulti == 0 )
+        {
+            (*PetscErrorPrintf)("Use of MultiMLSDim identifier together with single MLS type operation aka. MLSAdd() call.\n");
+            (*PetscErrorPrintf)("Please use MLSDim instead.\n");
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
+        else if( length <= N_MLS[N_D_MLS-1]+1 && !indim.IsDensity() )   //during setup the current MLS number maximum is called like this
+        {
+            MultiMLSDim    *dim = new MultiMLSDim (*multi,1,length,0.0);
+            
+            dimensions.push_back(dim);
+            num_mlsdims++;
+            num_dims++;
+        }
+        else
+        {
+            (*PetscErrorPrintf)("Invalid input for mls polarization:\n");
+            (*PetscErrorPrintf)("Current input is: %s with length %d (MLS+1 = %d)\n",indim.ToString().c_str(),length,N_MLS[N_D_MLS-1]+1);
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
     }
     
     PetscFunctionReturn(0);
@@ -296,24 +490,32 @@ PetscErrorCode System::FindMatch(Dim * name, PetscInt * n)
     
       while ( !(temp->IsEqual(name)) )
       {
-	num++;
-	it++;
-	temp = *it;
+          num++;
+          it++;
+          temp = *it;
 	
-	if( it == dimensions.end() )
-	{
-	  (*PetscErrorPrintf)("Error: No match for current dimension %s!\n",(name->ToString()).c_str());
-	  SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
-	}
+          if( it == dimensions.end() )
+          {
+              (*PetscErrorPrintf)("Error: No match for current dimension %s!\n",(name->ToString()).c_str());
+              SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+          }
       }
     
       *n = num;
     }
     else
     {
-      *n = -1;
+        MLSDim          *ptr1 = dynamic_cast<MLSDim*> (name);
+        MultiMLSDim     *ptr2 = dynamic_cast<MultiMLSDim*> (name);
+        
+        if(ptr1)        *n = -ptr1->mlsTypeNumber-1;
+        else if(ptr2)   *n = -ptr2->mlsTypeNumber-1;
+        else
+        {
+            (*PetscErrorPrintf)("Error: n00 error: %s!\n",(name->ToString()).c_str());
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
     }
-    
     
     PetscFunctionReturn(0);
 }
@@ -341,19 +543,19 @@ PetscErrorCode System::MLSDimMaxVal(PetscInt n,PetscInt *ret)
       std::list<Dim*>::iterator it=dimensions.begin();
       for(i=0; i < n; i++)	it++;
     
-      MLSDim		*ptr = dynamic_cast<MLSDim*>(*it);		//dynamic cast checks whether its actually a real MLSDim
+      MLSDim		*ptr = dynamic_cast<MLSDim*>(*it);		//dynamic cast checks whether its actually a real MLSDim, should also work for MultiMLSDim
     
       if(ptr)		*ret = ptr->dimlength;
       else
       {
-	(*PetscErrorPrintf)("System::MLSDimMaxVal() error. The checked dimension is not a MLS dimension! dim number = %d\n",n);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+          (*PetscErrorPrintf)("System::MLSDimMaxVal() error. The checked dimension is not a MLS dimension! dim number = %d\n",n);
+          SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
     }
     else
     {
-      (*PetscErrorPrintf)("System::MLSDimMaxVal() error. The dimension number is too large! dim number = %d, num mls dims = %d \n",n, num_mlsdims);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        (*PetscErrorPrintf)("System::MLSDimMaxVal() error. The dimension number is too large! dim number = %d, num mls dims = %d \n",n, num_mlsdims);
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
     
     PetscFunctionReturn(0);
@@ -387,14 +589,14 @@ PetscErrorCode System::ModeDimLen(PetscInt n,PetscInt *ret)
       if(ptr)		*ret = ptr->dimlength;
       else
       {
-	(*PetscErrorPrintf)("System::ModeDimLen() error. The checked dimension is not an mode dimension! dim_number = %d\n",n);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+          (*PetscErrorPrintf)("System::ModeDimLen() error. The checked dimension is not an mode dimension! dim_number = %d\n",n);
+          SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
     }
     else
     {
-      (*PetscErrorPrintf)("System::ModeDimLen() error. The mode dimension number is too large! dim number = %d, num mode dims = %d \n",n, 2*num_modes);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        (*PetscErrorPrintf)("System::ModeDimLen() error. The mode dimension number is too large! dim number = %d, num mode dims = %d \n",n, 2*num_modes);
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
     
     PetscFunctionReturn(0);
@@ -428,14 +630,14 @@ PetscErrorCode System::IsMLSDimPol(PetscInt n,PetscInt *ret)
       if(ptr)		*ret = ptr->ispol;
       else
       {
-	(*PetscErrorPrintf)("System::IsMLSDimPol() error. The checked dimension is not a MLS dimension! dim number = %d\n",n);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+          (*PetscErrorPrintf)("System::IsMLSDimPol() error. The checked dimension is not a MLS dimension! dim number = %d\n",n);
+          SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
     }
     else
     {
-      (*PetscErrorPrintf)("System::IsMLSDimPol() error. The dimension number is too large! dim number = %d, num mls dims = %d \n",n, num_mlsdims);
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        (*PetscErrorPrintf)("System::IsMLSDimPol() error. The dimension number is too large! dim number = %d, num mls dims = %d \n",n, num_mlsdims);
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
     
     PetscFunctionReturn(0);
@@ -457,7 +659,7 @@ PetscErrorCode System::Energies(PetscInt n,PetscReal *ret)
 {
     PetscFunctionBeginUser;
     
-    PetscInt		i,size = dimensions.size();
+    PetscInt		i,size = (PetscInt) dimensions.size();
     
     if( n < size )
     {
@@ -468,8 +670,8 @@ PetscErrorCode System::Energies(PetscInt n,PetscReal *ret)
     }
     else
     {
-      (*PetscErrorPrintf)("System::Energies() error. The dimension number is too large! dim number = %d, num dims = %d \n",n,dimensions.size());
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        (*PetscErrorPrintf)("System::Energies() error. The dimension number is too large! dim number = %d, num dims = %d \n",n,dimensions.size());
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
     
     PetscFunctionReturn(0);
@@ -781,32 +983,40 @@ PetscErrorCode System::PQSPSetupIndex()
     
     if( num_dims )			//if there is at least one dimension and the parallel layout has been determined
     {
-      PetscInt		*mlsdim_pol;
-      PetscInt		*mlsdimlengths;
-      PetscInt		*modedimlenghts;
+        PetscInt		*mlsdim_pol;
+        PetscInt		*mlsdimlengths;
+        PetscInt		*modedimlenghts;
       
-      ierr = ExtractMLSDimPol(&mlsdim_pol); CHKERRQ(ierr);
-      ierr = ExtractMLSDimLengths(&mlsdimlengths); CHKERRQ(ierr);
-      ierr = ExtractModeDimLengths(&modedimlenghts); CHKERRQ(ierr);
+        ierr = ExtractMLSDimPol(&mlsdim_pol); CHKERRQ(ierr);
+        ierr = ExtractMLSDimLengths(&mlsdimlengths); CHKERRQ(ierr);
+        ierr = ExtractModeDimLengths(&modedimlenghts); CHKERRQ(ierr);
       
-      Index	*locindex = new Index (num_mlsdens+1,num_mlsdims,mlsdim_pol,N_MLS,mlsdimlengths,num_modes,modedimlenghts);
-      index		  = locindex;
+        if(!useMulti)       //single type of MLS
+        {
+            Index	*locindex   = new Index (num_mlsdens[0],num_mlsdims,mlsdim_pol,N_MLS[0],mlsdimlengths,num_modes,modedimlenghts);
+            index		        = locindex;
+        }
+        else                //multiple types of mls
+        {
+            Index    *locindex   = new Index (num_mlsdens,num_mlsdims,mlsdim_pol,N_MLS,mlsdimlengths,N_D_MLS,multiMLS_start,num_modes,modedimlenghts);
+            index                = locindex;
+        }
+        
+        PetscBool		flg;
+        ierr = PetscOptionsHasName(NULL,NULL,"-index_output",&flg); CHKERRQ(ierr);
+        if(flg)
+        {
+            index->PrintGenInfos();
+        }
       
-      PetscBool		flg;
-      ierr = PetscOptionsHasName(NULL,NULL,"-index_output",&flg); CHKERRQ(ierr);
-      if(flg)
-      {
-	index->PrintGenInfos();
-      }
-      
-      delete[]	mlsdim_pol;
-      delete[]	mlsdimlengths;
-      delete[]	modedimlenghts;
+        delete[]	mlsdim_pol;
+        delete[]	mlsdimlengths;
+        delete[]	modedimlenghts;
     }
     else				//otherwise its crap
     {
-      (*PetscErrorPrintf)("Index initialization requires at least one dimension and a parallel layout!\n");
-      SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        (*PetscErrorPrintf)("Index initialization requires at least one dimension and a parallel layout!\n");
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
     }
     
     PetscFunctionReturn(0);
@@ -914,7 +1124,7 @@ PetscErrorCode System::PQSPCreateVecPlus1(Vec * dm, PetscInt *start, PetscInt *e
 /**
  * @brief	intitializes the matrix for Liouvillian
  * 
- * @param	*AA	the matrix for storing the Liouvillian.
+ * @param	AA	the matrix for storing the Liouvillian.
  * 
  */
 
@@ -948,7 +1158,7 @@ PetscErrorCode System::PQSPCreateMat(Mat * AA)
 /**
  * @brief	Intitializes a parallel matrix of the dimensions of the Liouville superoperator plus an extra row. This results in an rectangular matrix.
  * 
- * @param	*AA	the matrix for storing the Liouvillian.
+ * @param	AA	the matrix for storing the Liouvillian.
  * 
  */
 
@@ -1145,19 +1355,19 @@ PetscErrorCode System::MLSPartitionFunction(PetscReal beta, PetscReal *ret)
     {
       if( !index->IsPol() )		//is it density like?
       {
-	summand = 1.0;
+          summand = 1.0;
 	
-	for(i=0; i < num_mlsdims; i++) 
-	{
-	  ierr = IsMLSDimPol(i,&flg); CHKERRQ(ierr);
-	  if( !flg )
-	  {
-	    ierr = Energies(i,&energy); CHKERRQ(ierr);
-	    summand *= PetscExpReal(-beta*((PetscReal) index->MLSQN(i))*energy);	//factor equals one for all polarization like dofs.
-	  }
-	}
+          for(i=0; i < num_mlsdims; i++)
+          {
+              ierr = IsMLSDimPol(i,&flg); CHKERRQ(ierr);
+              if( !flg )
+              {
+                  ierr = Energies(i,&energy); CHKERRQ(ierr);
+                  summand *= PetscExpReal(-beta*((PetscReal) index->MLSQN(i))*energy);	//factor equals one for all polarization like dofs.
+              }
+          }
 	
-	part += summand;
+          part += summand;
       }
       
       index->Increment();		//next element
@@ -1227,7 +1437,7 @@ PetscErrorCode System::DMWritePureState(Vec dm, PetscInt * indices)
     {
       if ( index->IsLocal() )								//if the index is local we may set the density matrix
       {
-	ierr = VecSetValue(dm,index->DMIndex(),1.0,INSERT_VALUES); CHKERRQ(ierr);	//write a 1 into the corresponding slot
+          ierr = VecSetValue(dm,index->DMIndex(),1.0,INSERT_VALUES); CHKERRQ(ierr);	//write a 1 into the corresponding slot
       }
     
       ierr = VecAssemblyBegin(dm);CHKERRQ(ierr);					//assemble the parallel vector
@@ -1502,7 +1712,7 @@ PetscReal System::FactorialTrunc(PetscInt n, PetscInt m)
  */
 
 #undef __FUNCT__
-#define __FUNCT__ "Name"
+#define __FUNCT__ "DimName"
 
 std::string System::DimName(PetscInt n)
 {
@@ -1519,6 +1729,63 @@ std::string System::DimName(PetscInt n)
     return	ret->ToString();
 }
 
+
+/**
+ * @brief    Checks wether the two pointers belong to the same class and if they belong to the same mls type. If not this function returns specific error messages. Also returns the type number.
+ *
+ * @param    ptr1   the first pointer
+ * @param    ptr2   the second pointer
+ *
+ */
+
+#undef __FUNCT__
+#define __FUNCT__ "SameType"
+
+PetscErrorCode System::SameType(MLSDim& Ptr1, MLSDim& Ptr2, PetscInt * type)
+{
+    PetscFunctionBeginUser;
+    
+    PetscInt        ret  = 0;
+    MultiMLSDim    *ptr1 = dynamic_cast<MultiMLSDim*> (&Ptr1);
+    MultiMLSDim    *ptr2 = dynamic_cast<MultiMLSDim*> (&Ptr2);
+    
+    if( (ptr1 && !ptr2) || (!ptr1 && ptr2) )            //xor, means the two belong to a different class
+    {
+        (*PetscErrorPrintf)("Error: Mixed use of MLSDim and MultiMLSDim objects. Use either MLSDim or MultiMLSDim!\n");
+        (*PetscErrorPrintf)("The two instances are: %s and %s\n",ptr1->ToString().c_str(),ptr2->ToString().c_str());
+        SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+    }
+    else if( ptr1 && ptr2 )
+    {
+        if( !(ptr1->SameType(ptr2)) )
+        {
+            (*PetscErrorPrintf)("Error: Mixed use of different MLS type objects! Use Matrix-Multiplication to create Liouvillians that couple different MLS types!\n");
+            (*PetscErrorPrintf)("The two instances are: %s and %s\n",ptr1->ToString().c_str(),ptr2->ToString().c_str());
+            SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+        }
+        else    ret = ptr1->mlsTypeNumber;
+    }
+    
+    *type = ret;
+    
+    PetscFunctionReturn(0);
+}
+
+
+/**
+ *  @brief      returns the number of mls dimensions per type for multi mls setups
+ *
+ *  @param      i       the index of the mls type
+ *
+ */
+
+PetscInt System::NumMlsdims(PetscInt i)
+{
+    if( i == N_D_MLS-1 )        return index->MLSDims()-multiMLS_start[N_D_MLS-1];
+    else if( i < N_D_MLS -1 )   return multiMLS_start[i+1] - multiMLS_start[i];
+    else                        return 0;
+}
+
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
 //----
@@ -1529,26 +1796,28 @@ std::string System::DimName(PetscInt n)
 
 /**
  * @brief	Constructor of the Elem class, which is a (very) lightweight version of the Index class, just contains the  needed for the recursive operator action stuff.
- * 		Shouldn't do anything with the mode dofs, but they are included either way, in order to not to have to implement even more specialized  in the Index class.
+ * 		    Shouldn't do anything with the mode dofs, but they are included either way, in order to not to have to implement even more specialized  in the Index class.
  * 
  * @param	index		the Index object.
  * @param	inorder		the order of the normally ordered expectation value to be computed.
+ * @param   type        the type of mls
  * 
  */
 
-Elem::Elem(Index * index,PetscInt inorder)
+Elem::Elem(Index * index,PetscInt inorder, PetscInt type)
 {
     PetscInt	i;
     
-    indices	= new PetscInt [index->NumDims()];
+    indices	        = new PetscInt [index->NumDims()];
     for(i=0; i < index->NumDims(); i++)	indices[i] = index->Indices(i);
     
-    order	= inorder;
-    length	= index->NumDims();
-    mlslength	= index->MLSDims();
-    NMLS	= index->NMls();
-    factor	= 1;
-    opactions	= 0;
+    order	        = inorder;
+    length	        = index->NumDims();
+    mlslength	    = index->MLSDims();
+    mlsTypeNumber   = type;
+    NMLS	        = index->NMls(type);
+    factor  	    = 1;
+    opactions	    = 0;
 }
 
 
@@ -1561,15 +1830,16 @@ Elem::Elem(const Elem& source)
 {
     PetscInt	i;
     
-    indices	= new PetscInt [source.length];
+    indices	        = new PetscInt [source.length];
     for(i=0; i < source.length; i++ )	indices[i] = source.indices[i];
     
-    order	= source.order;
-    length	= source.length;
-    mlslength	= source.mlslength;
-    NMLS	= source.NMLS;
-    factor	= source.factor;
-    opactions	= source.opactions;
+    order	        = source.order;
+    length	        = source.length;
+    mlslength	    = source.mlslength;
+    NMLS	        = source.NMLS;
+    factor	        = source.factor;
+    opactions	    = source.opactions;
+    mlsTypeNumber   = source.mlsTypeNumber;
 }
 
 

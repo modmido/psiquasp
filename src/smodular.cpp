@@ -28,16 +28,16 @@
 /**
  * @brief	Adds a single nonconnecting arrow to the Liouville space operator matrix. Has two modes one for preallocation and one for actual matrix setup. Corresponds to \f$ \dots \f$
  * 
- * @param	AA		the matrix.
- * @param	d_nnz		the array counting the number of local elements belonging to the diagonal block per row.
- * @param	o_nnz		the array counting the number of local elements belonging to the offdiagonal block per row.
- * @param	choose		0 for preallocation and 1 for actual matrix setup.
- * @param	mlselem		the name or identifier of the dimension corresponding to the bubble.
- * @param	couplingconst	the coupling constant of the as arising in the master equation.
+ * @param	AA		        the matrix.
+ * @param	d_nnz		    the array counting the number of local elements belonging to the diagonal block per row.
+ * @param	o_nnz		    the array counting the number of local elements belonging to the offdiagonal block per row.
+ * @param	choose		    0 for preallocation and 1 for actual matrix setup.
+ * @param	mlselem		    the name or identifier of the dimension corresponding to the bubble.
+ * @param	matrixelem  	the coupling constant of the as arising in the master equation.
  * 
  */
 
-PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim mlselem, PetscScalar matrixelem)
+PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim& mlselem, PetscScalar matrixelem)
 {
     PetscFunctionBeginUser;
     
@@ -61,16 +61,16 @@ PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, P
     {
       if(!choose)							//preallocation mode
       {
-	d_count++;							//the element itself is always local
-	d_nnz[locindex - index->LocStart()]++;
+          d_count++;							//the element itself is always local
+          d_nnz[locindex - index->LocStart()]++;
       }
       else								//set values mode
       {
-	if( index->MLSQN(elem) )					//trying to avoid overhead
-	{
-	  value	= matrixelem*((PetscScalar) index->MLSQN(elem));
-	  ierr	= MatSetValue(AA,locindex,locindex,value,ADD_VALUES); CHKERRQ(ierr);
-	}
+          if( index->MLSQN(elem) )					//trying to avoid overhead
+          {
+              value	= matrixelem*((PetscScalar) index->MLSQN(elem));
+              ierr	= MatSetValue(AA,locindex,locindex,value,ADD_VALUES); CHKERRQ(ierr);
+          }
       }
       
       locindex = index->Increment();
@@ -82,13 +82,13 @@ PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, P
     {
       if(!choose)
       {
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowNonconnecting preassembly completed:\n  input %s\n",mlselem.ToString().c_str()); CHKERRQ(ierr);
-	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
-	PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowNonconnecting preassembly completed:\n  input %s\n",mlselem.ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
+          PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
       }
       else
       {
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowNonconnecting assembly completed.\n  input %s\n",mlselem.ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowNonconnecting assembly completed.\n  input %s\n",mlselem.ToString().c_str()); CHKERRQ(ierr);
       }
     }
     
@@ -102,30 +102,32 @@ PetscErrorCode	System::AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, P
 /**
  * @brief	Adds a single connecting arrow to the Liouville space operator matrix. Has two modes one for preallocation and one for actual matrix setup.
  * 
- * @param	AA		the matrix.
+ * @param	AA		    the matrix.
  * @param	d_nnz		the array counting the number of local elements belonging to the diagonal block per row.
  * @param	o_nnz		the array counting the number of local elements belonging to the offdiagonal block per row.
  * @param	choose		0 for preallocation and 1 for actual matrix setup.
  * @param	mlsstart	the name or identifier of the dimension corresponding to the start bubble.
  * @param	mlsgoal		the name or identifier of the dimension corresponding to the goal bubble.
- * @param	couplingconst	the coupling constant of the as arising in the master equation.
+ * @param	matrixelem	the coupling constant of the as arising in the master equation.
  * 
  */
 
-PetscErrorCode	System::AddMLSSingleArrowConnecting(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim mlsstart, MLSDim mlsgoal, PetscScalar matrixelem)
+PetscErrorCode	System::AddMLSSingleArrowConnecting(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlsstart, MLSDim& mlsgoal, PetscScalar matrixelem)
 {
     PetscFunctionBeginUser;
     PetscErrorCode	ierr;
     
     
     //finding the dimensions
-    PetscInt start=0, goal=0;
+    PetscInt start=0, goal=0, type=0;
     
+    ierr = SameType(mlsstart,mlsgoal,&type); CHKERRQ(ierr);            //sanity check and get mls type number
     ierr = FindMatch(&mlsstart,&start); CHKERRQ(ierr);
     ierr = FindMatch(&mlsgoal,&goal); CHKERRQ(ierr);
     
     
-    //loop part  
+    //loop part
+    PetscInt    n00dim = -type-1;
     PetscInt	locindex,column,n00;
     PetscScalar	value;
     PetscInt	d_count = 0, o_count = 0;
@@ -134,93 +136,93 @@ PetscErrorCode	System::AddMLSSingleArrowConnecting(Mat AA, PetscInt * d_nnz, Pet
     
     while ( index->ContinueLocal() )					//loop over all local rows
     {
-      if ( start != -1 && goal != -1 )					//start is not n00 and goal is not n00
+      if ( start != n00dim && goal != n00dim )					//start is not n00 and goal is not n00
       {
-	if ( index->CanDecrement(goal) && index->CanIncrement(start) )
-	{
-	  column	= locindex + index->MLSCPitch(goal,start);
-	  if(!choose)							//preallocation mode
-	  {
-	    if( index->IsLocal(column)  )				//local element
-	    {
-	      d_count++;
-	      d_nnz[locindex - index->LocStart()]++;
-	    }
-	    else							//nonlocal element
-	    {
-	      o_count++;
-	      o_nnz[locindex - index->LocStart()]++;
-	    }
-	  }
-	  else								//MatSetValue mode
-	  {
-	      if( column >= index->TotalDOF() )
-	      {
-		index->PrintIndex();
-		index->PrintIndices();
-	      }
-	      value	= matrixelem*((PetscScalar) (index->MLSQN(start)+1));
-	      ierr	= MatSetValue(AA,locindex,column,value,ADD_VALUES); CHKERRQ(ierr);
-	  }
-	}
+          if ( index->CanDecrement(goal) && index->CanIncrement(start) )
+          {
+              column	= locindex + index->MLSCPitch(goal,start);
+              if(!choose)							//preallocation mode
+              {
+                  if( index->IsLocal(column)  )				//local element
+                  {
+                      d_count++;
+                      d_nnz[locindex - index->LocStart()]++;
+                  }
+                  else							//nonlocal element
+                  {
+                      o_count++;
+                      o_nnz[locindex - index->LocStart()]++;
+                  }
+              }
+              else								//MatSetValue mode
+              {
+                  if( column >= index->TotalDOF() )
+                  {
+                      index->PrintIndex();
+                      index->PrintIndices();
+                  }
+                  value	= matrixelem*((PetscScalar) (index->MLSQN(start)+1));
+                  ierr	= MatSetValue(AA,locindex,column,value,ADD_VALUES); CHKERRQ(ierr);
+              }
+          }
       }
-      else if( start != -1 && goal == -1 )				//start is not n00 and goal is n00
+      else if( start != n00dim && goal == n00dim )				//start is not n00 and goal is n00
       {
-	n00 = index->MLSQN(-1);
-	if ( n00 > 0 && index->CanIncrement(start) )
-	{
-	  column	= locindex + index->MLSIPitch(start);
-	  if(!choose)							//preallocation mode
-	  {
-	    if( index->IsLocal(column)  )				//local element
-	    {
-	      d_count++;
-	      d_nnz[locindex - index->LocStart()]++;
-	    }
-	    else							//nonlocal element
-	    {
-	      o_count++;
-	      o_nnz[locindex - index->LocStart()]++;
-	    }
-	  }
-	  else								//MatSetValue mode
-	  {
-	    value	= matrixelem*((PetscScalar) (index->MLSQN(start)+1));
-	    ierr	= MatSetValue(AA,locindex,column,value,ADD_VALUES); CHKERRQ(ierr);
-	  }
-	}
+          n00 = index->MLSQN(n00dim);
+          if ( n00 > 0 && index->CanIncrement(start) )
+          {
+              column	= locindex + index->MLSIPitch(start);
+              if(!choose)							//preallocation mode
+              {
+                  if( index->IsLocal(column)  )				//local element
+                  {
+                      d_count++;
+                      d_nnz[locindex - index->LocStart()]++;
+                  }
+                  else							//nonlocal element
+                  {
+                      o_count++;
+                      o_nnz[locindex - index->LocStart()]++;
+                  }
+              }
+              else								//MatSetValue mode
+              {
+                  value	= matrixelem*((PetscScalar) (index->MLSQN(start)+1));
+                  ierr	= MatSetValue(AA,locindex,column,value,ADD_VALUES); CHKERRQ(ierr);
+              }
+          }
       }
-      else if( start == -1 && goal != -1 )				//start is n00
+      else if( start == n00dim && goal != n00dim )				//start is n00
       {
-	n00	= index->MLSQN(-1);
-	if ( index->CanDecrement(goal) )
-	{
-	  column	= locindex + index->MLSDPitch(goal);
-	  if(!choose)							//preallocation mode
-	  {
-	    if( index->IsLocal(column)  )				//local element
-	    {
-	      d_count++;
-	      d_nnz[locindex - index->LocStart()]++;
-	    }
-	    else							//nonlocal element
-	    {
-	      o_count++;
-	      o_nnz[locindex - index->LocStart()]++;
-	    }
-	  }
-	  else								//MatSetValue mode
-	  {
-	    value	= matrixelem*((PetscScalar) (n00+1));
-	    ierr	= MatSetValue(AA,locindex,column,value,ADD_VALUES); CHKERRQ(ierr);
-	  }
-	}
+          n00	= index->MLSQN(n00dim);
+          if ( index->CanDecrement(goal) )
+          {
+              column	= locindex + index->MLSDPitch(goal);
+              if(!choose)							//preallocation mode
+              {
+                  if( index->IsLocal(column)  )				//local element
+                  {
+                      d_count++;
+                      d_nnz[locindex - index->LocStart()]++;
+                  }
+                  else							//nonlocal element
+                  {
+                      o_count++;
+                      o_nnz[locindex - index->LocStart()]++;
+                  }
+              }
+              else								//MatSetValue mode
+              {
+                  value	= matrixelem*((PetscScalar) (n00+1));
+                  ierr	= MatSetValue(AA,locindex,column,value,ADD_VALUES); CHKERRQ(ierr);
+              }
+          }
       }
       else								//down is n00 and up is n00: ERROR
       {
-	(*PetscErrorPrintf)("Error: AddMLSSingleArrowConnecting assembly messed up!\n");
-	(*PetscErrorPrintf)("Seems like both mls input strings are n00!\n");
-	SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
+          (*PetscErrorPrintf)("Error: AddMLSSingleArrowConnecting assembly messed up!\n");
+          (*PetscErrorPrintf)("Seems like both mls input strings are n00!\n");
+          SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_MIN_VALUE,"");
       }
       
       locindex = index->Increment();
@@ -232,13 +234,13 @@ PetscErrorCode	System::AddMLSSingleArrowConnecting(Mat AA, PetscInt * d_nnz, Pet
     {
       if(!choose)
       {
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowConnecting preassembly completed:\n  input %s %s",mlsstart.ToString().c_str(),mlsgoal.ToString().c_str()); CHKERRQ(ierr);
-	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
-	PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowConnecting preassembly completed:\n  input %s %s",mlsstart.ToString().c_str(),mlsgoal.ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD,"  local elements: %d, \t nonlocal elements: %d \t loc_start: %d, \t loc_end: %d\n",d_count,o_count,index->LocStart(),index->LocEnd()); CHKERRQ(ierr);
+          PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
       }
       else
       {
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowConnecting assembly completed.\n  input %s %s",mlsstart.ToString().c_str(),mlsgoal.ToString().c_str()); CHKERRQ(ierr);
+          ierr = PetscPrintf(PETSC_COMM_WORLD,"\nAddMLSSingleArrowConnecting assembly completed.\n  input %s %s",mlsstart.ToString().c_str(),mlsgoal.ToString().c_str()); CHKERRQ(ierr);
       }
     }
     

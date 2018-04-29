@@ -40,7 +40,7 @@ PetscErrorCode	TLS::TLSAdd(PetscInt ntls, PetscInt n10cutoff, PetscInt n01cutoff
 
     PetscErrorCode	ierr;
 
-    N_MLS = ntls;
+    ierr = MLSAdd(ntls); CHKERRQ(ierr);
 
     MLSDim	n11 (1,1), n10 (1,0), n01 (0,1);
 
@@ -629,7 +629,7 @@ PetscErrorCode	DickeDistribution::SetupDickeDist(TLS * sys)
 
     //allocate first level storage, just needs the number of states
     PetscInt		add,ndickestates = 0;
-    add			= sys->NMls() +1;		//the superradiant subspace has dimension N+1
+    add			= sys->NMls(0) +1;		//the superradiant subspace has dimension N+1
 
     while( add > 0 )
     {
@@ -660,7 +660,7 @@ PetscErrorCode	DickeDistribution::SetupDickeDist(TLS * sys)
 
     //initialize the Dicke quantum numbers
     PetscReal		m,l;							//the quantum numbers m and l
-    l			= sys->NMls()/2.0;					//initialize quantum numbers for
+    l			= sys->NMls(0)/2.0;					//initialize quantum numbers for
     m			= -l;							//ground state projector |N/2,-N/2><N/2,-N/2|
 
 
@@ -670,9 +670,9 @@ PetscErrorCode	DickeDistribution::SetupDickeDist(TLS * sys)
     step 		= 0;								//the integer counting the l subspaces, starts with zero in the superrradiant subspace
     count		= 0;								//the index counting all (superradiant and all other) dicke state projectors
 
-    while( step < sys->NMls()/2 +1 )							//works with integer division, the total number of Dicke subspaces
+    while( step < sys->NMls(0)/2 +1 )							//works with integer division, the total number of Dicke subspaces
     {
-      for(j = 0; j < sys->NMls()+1-2*step; j++)						//NMLS+1 possibilities for l_max, for each successive subspace l->l-1 the dimension drops by two
+      for(j = 0; j < sys->NMls(0)+1-2*step; j++)						//NMLS+1 possibilities for l_max, for each successive subspace l->l-1 the dimension drops by two
       {
 	ierr	= sys->VecContractReal(elem,&lengths[count],&dmindex[count],&prefactors[count]); CHKERRQ(ierr);		//extract the local nonzeros out of the vector and store them into arrays plus allocate them -> less overhead in computation
 
@@ -689,7 +689,7 @@ PetscErrorCode	DickeDistribution::SetupDickeDist(TLS * sys)
       l--;		//set quantum numbers to ground state of the next śpin subspace
       m = -l;		//   -->   |l-1,-(l-1)><l-1,-(l-1)|
 
-      if( step != sys->NMls()/2+1 )	//if its not the last subspace already
+      if( step != sys->NMls(0)/2+1 )	//if its not the last subspace already
       {
 	ierr	= JBlockShift(sys,step,elem); CHKERRQ(ierr);	//find the ground state of the next subspace via the trace condition
       }
@@ -714,9 +714,9 @@ PetscErrorCode	DickeDistribution::SetupDickeDist(TLS * sys)
  * 		diagonal element i.e. SUM = 1*P[m,0,0] +0*P[m-1,1,1] +0*P[m-2,2,2] ... for the P[n11,n10,n01] two-level system vector entries. For that to be true the diagonal entry (x*P[m,0,0]) of the new ground state vector is set to one minus all diagonal entries of all other vectors of
  * 		matching inversion, and the offdiagonal entries (P[m,x,x]) are set to minus the sum of all respective other offdiagonal entries of the other vectors.
  *
- * @param	sys		the System object.
- * @param	root		the vector of the higher subspace
- * @param	elem		the root of the lower subspace
+ * @param	sys		    the System object.
+ * @param   step        the index of the subspace
+ * @param	elem		the root of the subspace (return type)
  *
  */
 
@@ -738,7 +738,7 @@ PetscErrorCode	DickeDistribution::JBlockShift(TLS * sys, PetscInt step, Vec elem
     for(i=1; i < step; i++)						//the next ones are a bit more difficult
     {
       //ierr = PetscPrintf(PETSC_COMM_WORLD,"i = %d, (sys->NMls()+1) = %d, diff =%d, step = %d\n",i,(sys->NMls()+1),diff,step);
-      numbers[i]	=  i*(sys->NMls()+1) - 2*diff + step-i;		// ( (N+1)*i -2*diff = N+1 +N-1 +N-3 +N-5 ... the j^2 blocksizes added up ) + the position of the relevant element in each block
+      numbers[i]	=  i*(sys->NMls(0)+1) - 2*diff + step-i;		// ( (N+1)*i -2*diff = N+1 +N-1 +N-3 +N-5 ... the j^2 blocksizes added up ) + the position of the relevant element in each block
       diff		+= i;						// 1,3,6,10,15
     }
 

@@ -28,11 +28,11 @@ class Observable: public PropBase
   //-------------------------------------------------------------------------------------
   //internal variables needed for expecation value computation
   //-------------------------------------------------------------------------------------
-    PetscReal		shift;							//!< possible shift of the final(global) result, so far only used to compute Tr[rho]-1, where the shift is -1, otherwise set to zero.
+    PetscReal		shift;							    //!< possible shift of the final(global) result, so far only used to compute Tr[rho]-1, where the shift is -1, otherwise set to zero.
     PetscInt		freqcomponents;						//!< the number of different frequency components, arises from the rotating frame back transformation time dynamics
-    PetscInt		*lengths;						//!< the lengths of the local arrays
-    PetscInt		**dmindex;						//!< the indices of the relevant local dm entries
-    PetscReal		*domega;						//!< phase velocities of the rotating frame backtransformation, one per frequency component
+    PetscInt		*lengths;						    //!< the lengths of the local arrays
+    PetscInt		**dmindex;						    //!< the indices of the relevant local dm entries
+    PetscReal		*domega;						    //!< phase velocities of the rotating frame backtransformation, one per frequency component
     PetscReal		**prefactor;						//!< the prefactors that have to be multiplied with the respective entries
     
     
@@ -48,7 +48,7 @@ class Observable: public PropBase
     Observable()	{ isherm = 0; alloc = 0; }				//!< default constructor, isherm = 0
     ~Observable();
     
-    PetscErrorCode	Compute(Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);		//compute the expecation value, only first processor gets the answer
+    PetscErrorCode	Compute(Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);		    //compute the expecation value, only first processor gets the answer
     PetscErrorCode	ComputeAll(Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);		//compute the expecation value, all processors get the answer
     
     //basic
@@ -56,23 +56,23 @@ class Observable: public PropBase
     PetscErrorCode	SetupTr(System * sys);
     
     //mls
-    PetscErrorCode	SetupMlsOccupation(System * sys,MLSDim mlsdens);
-    PetscErrorCode	SetupMlsPolarization(System * sys, MLSDim mlsop, PetscReal freq);
-    PetscErrorCode	SetupMlsHigherPolarization(System * sys, MLSDim mlsop, PetscInt order, PetscReal freq);
-    PetscErrorCode	SetupMLSOccupationFull(System * sys, MLSDim &mlsop);
-    PetscErrorCode	SetupMLSIntercoupling(System * sys, MLSDim mlsop);
-    PetscErrorCode	SetupMlsJzDiff(System * sys,MLSDim Mlsdens1, MLSDim Mlsdens2);
-    PetscErrorCode	SetupMlsJzSquaredNorm(System * sys,MLSDim Mlsdens1, MLSDim Mlsdens2);
-    PetscErrorCode	SetupMlsJzNorm(System * sys,MLSDim Mlsdens1, MLSDim Mlsdens2);
-    PetscErrorCode	SetupTotalSpin(System * sys,MLSDim Mlsdens1, MLSDim Mlsdens2);
+    PetscErrorCode	SetupMlsOccupation(System * sys,MLSDim& mlsdens);
+    PetscErrorCode	SetupMlsPolarization(System * sys, MLSDim& mlsop, PetscReal freq);
+    PetscErrorCode	SetupMlsHigherPolarization(System * sys, MLSDim& mlsop, PetscInt order, PetscReal freq);
+    PetscErrorCode	SetupMLSOccupationFull(System * sys, MLSDim& mlsop);
+    PetscErrorCode	SetupMLSIntercoupling(System * sys, MLSDim& mlsop);
+    PetscErrorCode	SetupMlsJzDiff(System * sys,MLSDim& Mlsdens1, MLSDim& Mlsdens2);
+    PetscErrorCode	SetupMlsJzSquaredNorm(System * sys,MLSDim& Mlsdens1, MLSDim& Mlsdens2);
+    PetscErrorCode	SetupMlsJzNorm(System * sys,MLSDim& Mlsdens1, MLSDim& Mlsdens2);
+    PetscErrorCode	SetupTotalSpin(System * sys,MLSDim& Mlsdens1, MLSDim& Mlsdens2);
     
     //mode
     PetscErrorCode	SetupModeOccupation(System * sys,PetscInt mode);
     PetscErrorCode	SetupModePolarization(System * sys, PetscInt mode, PetscReal freq);
 
     //combined, not implemented yet
-    PetscErrorCode	SetupCombOccupation(System * sys, MLSDim mlsop, PetscInt mode);
-    PetscErrorCode	SetupCombPolarization(System * sys, MLSDim mlsop, PetscInt mode);
+    PetscErrorCode	SetupCombOccupation(System * sys, MLSDim& mlsop, PetscInt mode);
+    PetscErrorCode	SetupCombPolarization(System * sys, MLSDim& mlsop, PetscInt mode);
     
 };
 
@@ -89,14 +89,14 @@ class Observable: public PropBase
 class PModular: public PropBase
 {
   protected:
-    Vec		left;							//!< the trace vector times the O_left matrix, where O ist the quantity whose expect. value shall be computed i.e. < tr | O_left
-    PetscScalar	omega;							//!< possible rotating frame angular frequency
-    PetscReal	shift;							//!< possible shift, like in Tr(\rho)-1
+    Vec		left;							        //!< the trace vector times the O_left matrix, where O ist the quantity whose expect. value shall be computed i.e. < tr | O_left
+    PetscScalar	omega;							    //!< possible rotating frame angular frequency
+    PetscReal	shift;							    //!< possible shift, like in Tr(\rho)-1
     
     PetscErrorCode	GenerateLeft(System * sys, Mat AA);		//!< computes < tr | AA and stores it in left, also creates left
-    PetscErrorCode	LeftOverwrite(System * sys, Mat AA);		//!< overwrites and existing left vector
+    PetscErrorCode	LeftOverwrite(System * sys, Mat AA);	//!< overwrites and existing left vector
     PetscErrorCode	LeftUpdate(System * sys, Mat AA);		//!< changes an existing left vector left += < tr| AA
-    PetscErrorCode	MultiplyLeft(Mat AA);				//!< multiply existing left vector with AA
+    PetscErrorCode	MultiplyLeft(Mat AA);				    //!< multiply existing left vector with AA
     
     
   public:
@@ -104,7 +104,7 @@ class PModular: public PropBase
     ~PModular();
     
     PetscErrorCode	Compute(Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);			//compute the expecation value, only first processor gets the answer
-    PetscErrorCode	ComputeAll(Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);			//compute the expecation value, all processors get the answer
+    PetscErrorCode	ComputeAll(Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);		//compute the expecation value, all processors get the answer
     
 //     virtual PetscErrorCode	Setup(System * sys) = 0;
 };

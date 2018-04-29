@@ -361,7 +361,8 @@ int main(int argc, char **args)
     ierr = TSSetProblemType(ts,TS_LINEAR);CHKERRQ(ierr);				//tell petsc that we solve a linear diff. eq.
     ierr = TSSetType(ts,TSRK);CHKERRQ(ierr);						//set the time stepper to runge kutta
     ierr = TSRKSetType(ts,TSRK3BS);CHKERRQ(ierr);					//set it to 3rd order RK scheme of Bogacki-Shampine with 2nd order embedded method, this is an adaptive step width Runge-Kutta
-    ierr = TSSetDuration(ts,100000,1.e+6);CHKERRQ(ierr);				//set the maximum integration cycles and time
+    ierr = TSSetMaxTime(ts,1.e+6);CHKERRQ(ierr);                                     //set the maximum integration time
+    ierr = TSSetMaxSteps(ts,100000);CHKERRQ(ierr);                                   //set the maximum integration steps
     ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);		//what to do if the final time is not exactly reached with the time stepper, in this case nothing
 
     //adaptivity context for time stepper

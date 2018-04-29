@@ -11,6 +11,13 @@
  */
 
 /**
+ * TEST:
+ *   - make sure that the old way of coding is preserved, what happens without mls, what happens with one type of mls
+ *
+ *
+ */
+
+/**
  * @mainpage	PsiQuaSP -- Permutation symmetry for identical Quantum Systems Package
  *
  * @section	one General information:
@@ -91,8 +98,11 @@
  *  + 4a) Phononlaser/Supercooling master equation: two-level systems coupled to a phonon mode with external optical driving
  *        This example explains how to build arbitrary master equations using the elementary arrows
  *
- *  + 5) Same master equation as in 3a but using the graph partitioning package ParMetis to find further symmetries
- *       that lead to a further reduction in degrees of freedom, approximately from N^8 to N^7
+ *  + 5)  Same master equation as in 3a but using the graph partitioning package ParMetis to find further symmetries
+ *        that lead to a further reduction in degrees of freedom, approximately from N^8 to N^7
+ *
+ *  + 6a) Multi MLS Type example: Two types of TLS both interacting with the same, single radiation mode
+ *  + 6b) Multi MLS Type example: Two types of TLS both interacting with the same two radiation modes, includes an inter-TLS gtwo function as a custom observable example
  *
  */
 
@@ -113,7 +123,10 @@
 
 #define MIN(a,b)	(((a)<(b))?(a):(b))			//!< minimum macro
 #define MAX(a,b)	(((a)>(b))?(a):(b))			//!< maximum macro
-#define MAX_PARAM	50				    	//!< maximum number of parameters that can be stored internally
+
+#define MAX_PARAM	50			        		//!< maximum number of parameters that can be stored internally
+#define MAX_D_MLS   10                          //!< maximum number of different types of mls
+
 
 class Index;
 class Dim;
@@ -152,19 +165,24 @@ class System
   // Parameters for system specification:
   // mainly needed for the constructor call of Index *index.
   //-----------------------------------------------------------------
-    PetscInt		N_MLS;				//!< total number of mls
-    PetscInt		num_dims;			//!< how many dimensions in total
-    PetscInt		num_mlsdims;			//!< how many mls dimensions
-    PetscInt		num_mlsdens;			//!< how many mls density degrees of freedom
-    PetscInt		num_modes;			//!< how many bosonic modes
-    PetscInt		loc_size;			//!< how many local dm entries?
+    PetscInt		N_MLS[MAX_D_MLS] = {};		        //!< total number of mls
+    PetscInt        N_D_MLS;                            //!< total number of different mls
+    PetscInt        multiMLS_start[MAX_D_MLS] = {};     //!< the index of the frist dimension of the mls kind in the indices array
+    PetscInt		num_dims;			                //!< how many dimensions in total
+    PetscInt		num_mlsdims;			            //!< how many mls dimensions
+    PetscInt		num_mlsdens[MAX_D_MLS] = {};	    //!< how many mls density degrees of freedom
+    PetscInt		num_modes;			                //!< how many bosonic modes
+    PetscInt		loc_size;			                //!< how many local dm entries?
+    
+    PetscInt        useMulti;                           //!< used for sanity check so that MLSAdd and MLSAddMulti are not mixed!
+    PetscInt        useSingle;                          //!< used for sanity check so that MLSAdd and MLSAddMulti are not mixed!
 
-    std::list<Dim*>	dimensions;			//!< name of the dim
+    std::list<Dim*>	dimensions;			                //!< name of the dim
 
 
     //sanity check flags
-    PetscInt		parallel_layout;		//!< checks whether local distribution has already been set or not, is 0 if not, 1 if yes
-    PetscInt		modesetup;			//!< checks whether the user has already set a mode dimension, produces error messages if the MLS and mode dimension setup functions are mixed
+    PetscInt		parallel_layout;		            //!< checks whether local distribution has already been set or not, is 0 if not, 1 if yes
+    PetscInt		modesetup;			                //!< checks whether the user has already set a mode dimension, produces error messages if the MLS and mode dimension setup functions are mixed
 
 
   //-----------------------------------------------------------------
@@ -189,7 +207,9 @@ class System
   //METHODS: setup dimensions and local boundaries
   //-----------------------------------------------------------------
 
-    //normal, beginner dimension setup
+    //normal dimension setup
+    PetscErrorCode  MLSAdd(PetscInt nmls);
+    PetscErrorCode  MLSAddMulti(PetscInt nmls);
     PetscErrorCode	MLSAddDens(PetscInt n, PetscInt lenght,PetscReal energy);
     PetscErrorCode	MLSAddPol(PetscInt ket, PetscInt bra, PetscInt lenght);
     PetscErrorCode	MLSAddDens(MLSDim& dim, PetscInt lenght,PetscReal energy);
@@ -197,9 +217,9 @@ class System
     PetscErrorCode	ModeAdd(PetscInt length, PetscInt offdiag, PetscReal energy);
 
     //symmetry based, advanced dimension setup
-    PetscErrorCode	AddMLSPolFake(MLSDim name, PetscInt lenght,PetscReal dipole, PetscInt *rule);
-    PetscErrorCode	AddModeOneFake(PetscInt length, PetscInt offdiag, PetscReal energy, PetscInt *rule);
-    PetscErrorCode	AddNonInteractingMode(PetscReal energy);
+//    PetscErrorCode    AddMLSPolFake(MLSDim name, PetscInt lenght,PetscReal dipole, PetscInt *rule);
+//    PetscErrorCode    AddModeOneFake(PetscInt length, PetscInt offdiag, PetscReal energy, PetscInt *rule);
+//    PetscErrorCode    AddNonInteractingMode(PetscReal energy);
 
     //normal setup for matrices and vectors
     PetscErrorCode	PQSPSetup(Vec * dm, PetscInt matrices, Mat * AAs);				//!< Setup of the density matrix and all needed Liouvillians for time evolution and eigenvalue problems. Creates the index.
@@ -237,14 +257,14 @@ class System
     PetscErrorCode	AddLastRowTrace(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose);									//write the trace operation into the last row of the matrix
 
     PetscErrorCode	AddModeH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, PetscInt modenumber, PetscScalar couplingconst);				//H0 contributions
-    PetscErrorCode	AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim pol, PetscScalar couplingconst);					//
+    PetscErrorCode	AddMLSH0(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& pol, PetscScalar couplingconst);					//
 
-    PetscErrorCode	AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim mlsdown, MLSDim mlsup, ModeDim photon, PetscScalar matrixelem);	//basic interaction Hamiltonians
-    PetscErrorCode	AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim mlsdown, MLSDim mlsup, PetscScalar matrixelem);		//
+    PetscErrorCode	AddMLSModeInt(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlsdown, MLSDim& mlsup, ModeDim photon, PetscScalar matrixelem);	//basic interaction Hamiltonians
+    PetscErrorCode	AddMLSCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& mlsdown, MLSDim& mlsup, PetscScalar matrixelem);		//
     PetscErrorCode	AddModeCohDrive(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, PetscInt modenumber, PetscScalar couplingconst);			//
 
-    PetscErrorCode	AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim start, MLSDim goal, PetscReal matrixelem);		//dissipator matrix elements
-    PetscErrorCode	AddLindbladDephMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim n,PetscReal matrixelem);					//cannot be complex thats why the matrix element is PetscReal
+    PetscErrorCode	AddLindbladRelaxMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& start, MLSDim& goal, PetscReal matrixelem);		//dissipator matrix elements
+    PetscErrorCode	AddLindbladDephMLS(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, MLSDim& n,PetscReal matrixelem);					//cannot be complex thats why the matrix element is PetscReal
     PetscErrorCode	AddLindbladMode(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, PetscInt modenumber, PetscReal matrixelem);			// --> generates compiler error if this is complex
     PetscErrorCode	AddLindbladModeThermal(Mat AA, PetscInt * d_nnz, PetscInt * o_nnz, PetscInt choose, PetscInt modenumber, PetscReal matrixelem, PetscReal beta);	//
 
@@ -252,8 +272,8 @@ class System
     //advanced, modular Liouville space operators setup
 
     //multi-level systems
-    PetscErrorCode	AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim elem, PetscScalar matrixelem);
-    PetscErrorCode	AddMLSSingleArrowConnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim elem1, MLSDim elem2, PetscScalar matrixelem);
+    PetscErrorCode	AddMLSSingleArrowNonconnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim& elem, PetscScalar matrixelem);
+    PetscErrorCode	AddMLSSingleArrowConnecting(Mat AA, PetscInt *d_nnz, PetscInt *o_nnz, PetscInt choose, MLSDim& elem1, MLSDim& elem2, PetscScalar matrixelem);
 
 
     //modes
@@ -278,15 +298,16 @@ class System
     Index		*index;									//!< the index for the whole program/setup stage
 
     //some return functions
-    PetscInt		NumDims()		{ return num_dims;		}		//!< Return the number of dimensions
-    PetscInt		NMls()			{ return N_MLS;			}		//!< Return the number of mls
-    PetscInt		NumMlsdims()		{ return num_mlsdims;		}		//!< Return the number of mls dof
-    PetscInt		NLevels()		{ return num_mlsdens+1;		}		//!< Return the number of mls levels
-    PetscInt		NumModes()		{ return num_modes;		}		//!< Return the number of modes
+    PetscInt		NumDims()		            { return num_dims;		    }		//!< Return the number of dimensions
+    PetscInt		NMls(PetscInt i)	        { return N_MLS[i];			}		//!< Return the number of mls TODO: maybe change this to a more general function
+    PetscInt        NDMLS()                     { return N_D_MLS;           }       //!< Return the number of different mls types
+    PetscInt		NumMlsdims()	            { return num_mlsdims;		}		//!< Return the number of mls dof
+    PetscInt		NLevels(PetscInt i)	        { return num_mlsdens[i]+1;		}	//!< Return the number of mls levels
+    PetscInt		NumModes()		            { return num_modes;		}		    //!< Return the number of modes
 
-    PetscInt		LocSize()		{ return loc_size;		}		//!< Return the local size of the parallel snippet
+    PetscInt		LocSize()		    { return loc_size;		}		//!< Return the local size of the parallel snippet
 
-    PetscInt		NumParams()		{ return numparams;		}		//!< Return the number of parameters
+    PetscInt		NumParams()		    { return numparams;		}		//!< Return the number of parameters
     PetscScalar		PValue(PetscInt n)	{ return params[n];		}		//!< Return the value of parameter n
     std::string		PName(PetscInt n)	{ return paramname[n];		}		//!< Return the name of parameter n
 
@@ -316,11 +337,13 @@ class System
 
     //dimensions
     PetscErrorCode	FindMatch(Dim * name, PetscInt * dim);					//returns the number of the dimension into the dim pointer
-    std::string		DimName(PetscInt n);							//returns the name of the nth dimension
+    std::string		DimName(PetscInt n);						        	//returns the name of the nth dimension
     PetscErrorCode	MLSDimMaxVal(PetscInt n,PetscInt *ret);					//return the maxmimum value of the mls dimension
     PetscErrorCode	ModeDimLen(PetscInt n,PetscInt *ret);					//return the value of modedimlenghts
     PetscErrorCode	IsMLSDimPol(PetscInt n,PetscInt *ret);					//return whether the dimension n is a mls polarization or not (i.e. 1 or 0)
     PetscErrorCode	Energies(PetscInt n,PetscReal *ret);					//return the energy of dimension n
+    PetscErrorCode  SameType(MLSDim& ptr1, MLSDim& ptr2, PetscInt * type);  //checks wether the two pointers refer to the same mls type and returns error messages if not
+    PetscInt        NumMlsdims(PetscInt i);
 
     PetscErrorCode	PrintEnergies();							//print all energies into stdout
     PetscErrorCode	PrintNames();								//print all name into stdout
@@ -366,7 +389,8 @@ class Elem
     PetscReal	factor;				//the prefactor for the dm entry for computation
     PetscInt	opactions;			//the number of operators that have been applied to the entry, should be twice the order in the end g^(2) ~ <JdJdJJ> i.e. four operators
     PetscInt	order;				//the order of the normal ordered expectation value: 2 for <JdJdJJ>
-
+    PetscInt    mlsTypeNumber;      //the type of mls
+    
     inline	PetscInt	EqualIndices(const Elem& comp);		//are the all indices the same?
     inline	PetscInt	n00();					//compute the n00 value
 
@@ -375,10 +399,10 @@ class Elem
     static PetscErrorCode	CombineListElems(std::list< Elem* >* clean, std::list< Elem* >* raw);
     static bool			ElemComp(const Elem* first, const Elem* second);		//static member functions do not know a thing about the current element, needed for sorting algorithms
 
-    Elem(Index * index,PetscInt inorder);				//normal constructor
-    Elem(const Elem& source);						//copy constructor
+    Elem(Index * index,PetscInt inorder, PetscInt type);				//normal constructor
+    Elem(const Elem& source);						                    //copy constructor
 
-    ~Elem();								//default destructor
+    ~Elem();								                            //default destructor
 };
 
 

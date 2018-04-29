@@ -64,7 +64,7 @@ PetscErrorCode Lambda::Setup(Vec* dm, Mat* AA)
     MLSDim	n22 (2,2), n21 (2,1), n20 (2,0), n12 (1,2), n11 (1,1), n10 (1,0), n02 (0,2), n01 (0,1), n00 (0,0);		//first we create all MLS and Mode dimension identifiers
     ModeDim	mket (0,0), mbra (1,0);
     
-    N_MLS = nmls;							//N_MLS is the internal parameter that defines the number of multi-level systems
+    ierr = MLSAdd(nmls); CHKERRQ(ierr);
         
     ierr = MLSAddDens(n22,nmls+1,energy2); CHKERRQ(ierr);		//adding the mls degrees of freedom
     ierr = MLSAddPol(n21,dx21+1); CHKERRQ(ierr);			//here we use offdiagonal truncation if dx21 < N_MLS
@@ -364,7 +364,8 @@ int main(int argc, char **args)
     ierr = TSSetProblemType(ts,TS_LINEAR);CHKERRQ(ierr);				//tell petsc that we solve a linear diff. eq.
     ierr = TSSetType(ts,TSRK);CHKERRQ(ierr);						//set the time stepper to runge kutta
     ierr = TSRKSetType(ts,TSRK3BS);CHKERRQ(ierr);					//set it to 3rd order RK scheme of Bogacki-Shampine with 2nd order embedded method, this is an adaptive step width Runge-Kutta
-    ierr = TSSetDuration(ts,100000,1.e+6);CHKERRQ(ierr);				//set the maximum integration cycles and time
+    ierr = TSSetMaxTime(ts,1.e+6);CHKERRQ(ierr);                                     //set the maximum integration time
+    ierr = TSSetMaxSteps(ts,100000);CHKERRQ(ierr);                                   //set the maximum integration steps
     ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_STEPOVER);CHKERRQ(ierr);		//what to do if the final time is not exactly reached with the time stepper, in this case nothing
     
     //adaptivity context for time stepper

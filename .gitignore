@@ -14,3 +14,9 @@
 doc/html
 doc/latex
 doc/doxygen_sqlite3.db
+
+# XCode and other Apple stuff #
+###############################
+*.DS_Store
+*.xcodeproj
+*.dSYM

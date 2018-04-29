@@ -2,7 +2,7 @@
 /**
  * @file	distributions.hpp
  * 
- * 		Definition of the Distribution and DModular classes.
+ * 		    Definition of the Distribution and DModular classes.
  * 
  * @author	Michael Gegg
  * 
@@ -33,16 +33,16 @@ class Distribution: public PropBase
   //-------------------------------------------------------------------------------------
   //computation and setup of observables
   //-------------------------------------------------------------------------------------
-    Distribution()	{ isherm = 1; length = 0; alloc = 0; }					//!< default constructor, isherm = 1, projectors are generally hermitian
-    ~Distribution();										//nonempty destructor
+    Distribution()	{ isherm = 1; length = 0; alloc = 0; }					                //!< default constructor, isherm = 1, projectors are generally hermitian
+    ~Distribution();										                                //nonempty destructor
     
-    PetscInt		PrintTotalNum() { return length; }					//!< Return the number of different number states.
+    PetscInt		PrintTotalNum() { return length; }					                    //!< Return the number of different number states.
     
-    PetscErrorCode	Compute (Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);	//compute the expecation value
+    PetscErrorCode	Compute (Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);	    //compute the expecation value
     PetscErrorCode	ComputeAll (Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);	//compute the expecation value
     
-    PetscErrorCode	SetupMLSDensityDistribution(System * sys,MLSDim mlsdens);
-    PetscErrorCode	SetupMLSOffdiagDistribution(System * sys,MLSDim mlsop,PetscInt number);
+    PetscErrorCode	SetupMLSDensityDistribution(System * sys,MLSDim& mlsdens);
+    PetscErrorCode	SetupMLSOffdiagDistribution(System * sys,MLSDim& mlsop,PetscInt number);
     PetscErrorCode	SetupModeDistribution(System * sys,PetscInt modenumber);
 };
 
@@ -58,22 +58,22 @@ class DModular: public PropBase
     PetscInt		totalnum;			//!< The total number of different states
     PetscInt		*lengths;			//!< The number of relevant local density matrix elements per state
     PetscInt		**dmindex;			//!< The indices of the relevant elements, for each state, starting with zero at the first local element.
-    PetscReal		**prefactors;			//!< The corresponding prefactors
+    PetscReal		**prefactors;		//!< The corresponding prefactors
     
     
-    PetscErrorCode	AllocateLocStorage(const PetscInt numspin);		//allocate storage
-    PetscErrorCode	JBlockShift(System * sys, PetscInt step, Vec elem);	//create root of the next pseudospin subspace
+    PetscErrorCode	AllocateLocStorage(const PetscInt numspin);		        //allocate storage
+    PetscErrorCode	JBlockShift(System * sys, PetscInt step, Vec elem);	    //create root of the next pseudospin subspace
     
   public:    
   //-------------------------------------------------------------------------------------
   //computation and setup of observables
   //-------------------------------------------------------------------------------------
-    DModular()	{ isherm = 1; alloc = 0; totalnum = 0; }				//!< default constructor, isherm = 1, projectors are generally hermitian
-    ~DModular();									//nonempty destructor
+    DModular()	{ isherm = 1; alloc = 0; totalnum = 0; }				                    //!< default constructor, isherm = 1, projectors are generally hermitian
+    ~DModular();									                                        //nonempty destructor
     
-    PetscInt		PrintTotalNum() { return totalnum; }					//!< Return the number of different states.
+    PetscInt		PrintTotalNum() { return totalnum; }					                //!< Return the number of different states.
     
-    PetscErrorCode	Compute (Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);	//compute the expecation value
+    PetscErrorCode	Compute (Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);	    //compute the expecation value
     PetscErrorCode	ComputeAll (Vec dm,PetscReal time,PetscScalar * ret,PetscInt number);	//compute the expecation value
     PetscErrorCode	SetupDickeDistribution(System * sys);
 };
