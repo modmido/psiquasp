@@ -27,7 +27,7 @@ PsiQuaSP quantum master equations are complex valued equations so the PETSc inst
 and then follow the instructions. The `PETSC_ARCH` variable allows to have multiple PETSc builds simultaneously, which is highly recommended. For instance there is a debug and a no-debug version of PETSc. 
 The debug version allows the use of debuggers such as `gdb` however once the application code is stable the user should use the optimized PETSc build in order to get good performance. This is done by setting the `--with-debugging=0` 
 flag in the PETSc configuration. So the user should have at least two PETSc builds one with and one without debugging. PARMETIS and other external packages are installed by setting the corresponding flag in the PETSc installation.
-PsiQuaSP is tested for PETSc version 3.7.6
+PsiQuaSP is tested for PETSc version 3.9
 
 The installation procedure presented here is recommended for people starting to use PsiQuaSP and/or PETSc. They are not mandatory (except for the use of complex numbers) and the advanced user may want to change some aspects in the installation. 
 
@@ -41,23 +41,13 @@ Also if BLAS/LAPACK and/or MPI are already installed on your machine you may ski
 
 #### Extended precision
 
-Sometimes double precision is not sufficient or rather the occuring equations may be "ill conditioned" and preconditioning is something that needs a lot of expertise. Thus in order to get converged results it may be necessary to use quadruple precision, which is achieved by using the `--with-precision=__float128` flag - this is only possible with C and not C++, thus the use of `--with-clanguage=c` is mandatory. However so far this feature is not a standard PETSc feature (at least when calling PETSc from a C++ code). Therefore there is a patch in the `patch` folder. This requires git, thus you should clone PETSc from https://bitbucket.org/petsc/petsc with the command 
-
-`git clone https://bitbucket.org/petsc/petsc.git`
-
-and then switch to version 3.7.6 with the command
-
-`git checkout v3.7.6`
-
-Then copy the patches into your PETSc folder and run
-
-`git apply petscpatch.patch`
-
-in the PETSc folder and then configure PETSc e.g. with the options
+Sometimes double precision is not sufficient or rather the occuring equations may be "ill conditioned" and preconditioning is something that needs a lot of expertise. 
+Thus in order to get converged results it may be necessary to use quadruple precision, which is achieved by using the `--with-precision=__float128` flag - this is only possible with C and not C++, thus the use of `--with-clanguage=c` is mandatory. 
+As of PETSc version 3.8 this is a standard feature and is built with the following command: 
 
 `./configure --with-cc=gcc --with-cxx=g++ --with-fc=gfortran --download-mpich --with-clanguage=c --with-scalar-type=complex --with-precision=__float128 --download-f2cblaslapack`
 
-The SLEPc installation remains the same. This is tested for PETSc 3.7.6 and SLEPc 3.7.3. In the future this functionality will be included in the standard PETSc release (3.8 release) and this step will become obsolete. 
+The SLEPc installation remains the same. This is tested for PETSc 3.9 and SLEPc 3.9.
 
 
 ### Installing SLEPc

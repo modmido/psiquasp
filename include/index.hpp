@@ -1405,15 +1405,20 @@ inline PetscInt Index::Indices(PetscInt dim)
 
 inline PetscInt Index::MaxQN(PetscInt dim)
 {
-    PetscInt	ret,dummy,type = GetType(dim);
-    
-    if( dim == -type-1 )
+    PetscInt	ret,dummy;
+   
+    if( dim < firstmodedim )
     {
-      ret	= NMLS[type] +1;
-    }
-    else if( dim < firstmodedim )
-    {
-      ret	= mlsdim_maxvalues[dim];
+      PetscInt  type = GetType(dim);
+       
+      if( dim == -type-1 )
+      {
+        ret	= NMLS[type];
+      }
+      else
+      {
+        ret	= mlsdim_maxvalues[dim];
+      }
     }
     else
     {

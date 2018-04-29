@@ -249,7 +249,9 @@ PetscErrorCode Distribution::SetupModeDistribution(System * sys,PetscInt modenum
       ierr = PetscPrintf(PETSC_COMM_WORLD,"\nDistribution for mode %s initialized.\n",modedim.ToString().c_str()); CHKERRQ(ierr);
     }
  
-    
+    delete[] loccount;
+    delete[] templengths;
+
     PetscFunctionReturn(0);
 }
 
@@ -326,6 +328,9 @@ PetscErrorCode Distribution::SetupMLSDensityDistribution(System * sys,MLSDim& ml
     }
     
     
+    delete[] templengths;
+    delete[] loccount;
+
     PetscFunctionReturn(0);
 }
 

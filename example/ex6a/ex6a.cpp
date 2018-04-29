@@ -309,17 +309,17 @@ PetscErrorCode CorrelationsFile::SetupMyGnFile(TwoTLS * sys, std::string name)
     ierr = mode0thirdorder->SetupModeGnfct(sys,0,3);CHKERRQ(ierr);			//computes g^(2) = <b^\dagger b^\dagger b^\dagger b b b>/<b^\dagger b>^3 
     ierr = AddElem(mode0thirdorder,"g(3)(m0)");CHKERRQ(ierr);
     
-    ierr = n110secorder->SetupMLSGnfct(sys,n01_0,2);CHKERRQ(ierr);				//computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2
-    ierr = AddElem(n110secorder,"g(2)(n11)");CHKERRQ(ierr);
+//    ierr = n110secorder->SetupMLSGnfct(sys,n01_0,2);CHKERRQ(ierr);				//computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2
+//    ierr = AddElem(n110secorder,"g(2)(n11)");CHKERRQ(ierr);
     
-    ierr = n110thirdorder->SetupMLSGnfct(sys,n01_0,3);CHKERRQ(ierr);			//computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3
-    ierr = AddElem(n110thirdorder,"g(3)(n11)");CHKERRQ(ierr);
+//    ierr = n110thirdorder->SetupMLSGnfct(sys,n01_0,3);CHKERRQ(ierr);			//computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3
+//    ierr = AddElem(n110thirdorder,"g(3)(n11)");CHKERRQ(ierr);
     
-    ierr = n111secorder->SetupMLSGnfct(sys,n01_1,2);CHKERRQ(ierr);                //computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2
-    ierr = AddElem(n111secorder,"g(2)(n11)");CHKERRQ(ierr);
+//    ierr = n111secorder->SetupMLSGnfct(sys,n01_1,2);CHKERRQ(ierr);                //computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2
+//    ierr = AddElem(n111secorder,"g(2)(n11)");CHKERRQ(ierr);
     
-    ierr = n111thirdorder->SetupMLSGnfct(sys,n01_1,3);CHKERRQ(ierr);            //computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3
-    ierr = AddElem(n111thirdorder,"g(3)(n11)");CHKERRQ(ierr);
+//    ierr = n111thirdorder->SetupMLSGnfct(sys,n01_1,3);CHKERRQ(ierr);            //computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3
+//    ierr = AddElem(n111thirdorder,"g(3)(n11)");CHKERRQ(ierr);
     
     ierr = MakeHeaderTEV();CHKERRQ(ierr);
     

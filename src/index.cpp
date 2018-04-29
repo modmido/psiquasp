@@ -363,9 +363,10 @@ Index::Index(PetscInt ndens, PetscInt nummlsdims, PetscInt * mlspol, PetscInt N,
     for(i=0; i < N_D_MLS; i++)  loc_nlevels[i] = ndens+1;                   //
     num_levels                  = loc_nlevels;                              //
     
-    PetscInt    *loc_multistart = new PetscInt [N_D_MLS];   //dummy values
-    loc_multistart[0]   = 0;                                //only really needed for multi mls type usage
-    multiMLS_start      = loc_multistart;                   //
+    PetscInt    *loc_multistart = new PetscInt [N_D_MLS+1];   //dummy values
+    loc_multistart[0]   = 0;                                  //only really needed for multi mls type usage
+    loc_multistart[1]   = firstmodedim;
+    multiMLS_start      = loc_multistart;                     //
     
     PetscInt    *loc_nmls = new PetscInt [N_D_MLS];         //only one type of mls in this case
     loc_nmls[0]     = N;                                    //the number of mls
@@ -846,6 +847,8 @@ Index::~Index()
     delete[] mlsdim_pol;
     delete[] multiMLS_start;
     delete[] mls_dof;
+    delete[] num_levels;
+    delete[] NMLS;
 }
 
 

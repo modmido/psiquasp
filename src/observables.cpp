@@ -905,9 +905,9 @@ PetscErrorCode Observable::SetupMlsJzSquaredNorm(System * sys, MLSDim& mlsdens1_
     
 
     //finding the dimensions  
-    PetscInt		dens1=0, dens2=0;
+    PetscInt		dens1=0, dens2=0,type=0;
     
-    ierr = sys->SameType(mlsdens1_name,mlsdens2_name,NULL); CHKERRQ(ierr);
+    ierr = sys->SameType(mlsdens1_name,mlsdens2_name,&type); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
 
@@ -987,9 +987,9 @@ PetscErrorCode Observable::SetupMlsJzNorm(System * sys, MLSDim& mlsdens1_name, M
     
     
     //finding the dimensions  
-    PetscInt		dens1=0, dens2=0;
+    PetscInt		dens1=0, dens2=0, type=0;
     
-    ierr = sys->SameType(mlsdens1_name,mlsdens2_name,NULL); CHKERRQ(ierr);
+    ierr = sys->SameType(mlsdens1_name,mlsdens2_name,&type); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens1_name,&dens1); CHKERRQ(ierr);
     ierr = sys->FindMatch(&mlsdens2_name,&dens2); CHKERRQ(ierr);
        
