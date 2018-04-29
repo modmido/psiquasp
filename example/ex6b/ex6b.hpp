@@ -20,6 +20,7 @@ class TwoTLS: public System
 {
   public:
     PetscErrorCode	Setup(Vec * dm, Mat * AA);
+    PetscErrorCode  MatJ10Left(Mat * out, PetscInt type);
     PetscErrorCode  MatJ10Left(Mat * out);
 };
 
@@ -56,6 +57,28 @@ class CorrelationsFile: public PropFile
 {
   public:
     PetscErrorCode	SetupMyGnFile(TwoTLS * sys, std::string name);			//set it up
+};
+
+
+/*
+ * Class for the user specified, tls gtwo function numerator < Jd Jd J J >, with J = J_{01,type} observable
+ */
+
+class TLSGTwo: public PModular
+{
+public:
+    PetscErrorCode    Setup(TwoTLS* sys,PetscInt type);
+};
+
+
+/*
+ * Class for the user specified, inter-tls gtwo function denominator < Jd J >, with J = J_{01,type} observable
+ */
+
+class TLSGOne: public PModular
+{
+public:
+    PetscErrorCode    Setup(TwoTLS* sys,PetscInt type);
 };
 
 

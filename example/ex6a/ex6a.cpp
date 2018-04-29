@@ -273,7 +273,8 @@ PetscErrorCode ObservablesFile::SetupMyObsFile(TwoTLS * system, std::string name
 
 /*
  * Setup for the Gnfcts file.
- * 
+ * The Gnfct class does not work with the multimls setup, how the mls gnfcts are set up in this case is explained in ex6b.
+ *
  */
 
 #undef __FUNCT__
@@ -292,14 +293,6 @@ PetscErrorCode CorrelationsFile::SetupMyGnFile(TwoTLS * sys, std::string name)
     //allocate new Observable objects
     Gnfct	        *mode0secorder		= new Gnfct();
     Gnfct	        *mode0thirdorder	= new Gnfct();
-    Gnfct	        *n110secorder		= new Gnfct();
-    Gnfct	        *n110thirdorder		= new Gnfct();
-    Gnfct           *n111secorder       = new Gnfct();
-    Gnfct           *n111thirdorder     = new Gnfct();
-    
-    
-    //dof identifiers
-    MultiMLSDim     n01_0 (0,1,0), n01_1 (0,1,1);
     
     
     //initialize them and add them to the list
@@ -308,18 +301,6 @@ PetscErrorCode CorrelationsFile::SetupMyGnFile(TwoTLS * sys, std::string name)
    
     ierr = mode0thirdorder->SetupModeGnfct(sys,0,3);CHKERRQ(ierr);			//computes g^(2) = <b^\dagger b^\dagger b^\dagger b b b>/<b^\dagger b>^3 
     ierr = AddElem(mode0thirdorder,"g(3)(m0)");CHKERRQ(ierr);
-    
-//    ierr = n110secorder->SetupMLSGnfct(sys,n01_0,2);CHKERRQ(ierr);				//computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2
-//    ierr = AddElem(n110secorder,"g(2)(n11)");CHKERRQ(ierr);
-    
-//    ierr = n110thirdorder->SetupMLSGnfct(sys,n01_0,3);CHKERRQ(ierr);			//computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3
-//    ierr = AddElem(n110thirdorder,"g(3)(n11)");CHKERRQ(ierr);
-    
-//    ierr = n111secorder->SetupMLSGnfct(sys,n01_1,2);CHKERRQ(ierr);                //computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2
-//    ierr = AddElem(n111secorder,"g(2)(n11)");CHKERRQ(ierr);
-    
-//    ierr = n111thirdorder->SetupMLSGnfct(sys,n01_1,3);CHKERRQ(ierr);            //computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3
-//    ierr = AddElem(n111thirdorder,"g(3)(n11)");CHKERRQ(ierr);
     
     ierr = MakeHeaderTEV();CHKERRQ(ierr);
     

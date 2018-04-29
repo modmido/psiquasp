@@ -319,16 +319,14 @@ PetscErrorCode CorrelationsFile::SetupMyGnFile(TwoTLS * sys, std::string name)
     //allocate new Observable objects
     Gnfct	        *mode0secorder		= new Gnfct();
     Gnfct	        *mode0thirdorder	= new Gnfct();
-    Gnfct	        *n110secorder		= new Gnfct();
-    Gnfct	        *n110thirdorder		= new Gnfct();
-    Gnfct           *n111secorder       = new Gnfct();
-    Gnfct           *n111thirdorder     = new Gnfct();
+    TLSGOne         *gone0              = new TLSGOne();
+    TLSGOne         *gone1              = new TLSGOne();
+    TLSGTwo         *gtwo0              = new TLSGTwo();
+    TLSGTwo         *gtwo1              = new TLSGTwo();
     InterGOne       *gone               = new InterGOne();
     InterGTwo       *gtwo               = new InterGTwo();
     
     
-    //dof identifiers
-    MultiMLSDim     n01_0 (0,1,0), n01_1 (0,1,1);
     
     
     //initialize them and add them to the list
@@ -338,25 +336,95 @@ PetscErrorCode CorrelationsFile::SetupMyGnFile(TwoTLS * sys, std::string name)
     ierr = mode0thirdorder->SetupModeGnfct(sys,0,3);CHKERRQ(ierr);			//computes g^(2) = <b^\dagger b^\dagger b^\dagger b b b>/<b^\dagger b>^3 
     ierr = AddElem(mode0thirdorder,"g(3)(m0)");CHKERRQ(ierr);
     
-    ierr = n110secorder->SetupMLSGnfct(sys,n01_0,2);CHKERRQ(ierr);				//computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2
-    ierr = AddElem(n110secorder,"g(2)(n11)");CHKERRQ(ierr);
+    ierr = gone0->Setup(sys,0);CHKERRQ(ierr);
+    ierr = AddElem(gone0,"gone 0");CHKERRQ(ierr);
     
-    ierr = n110thirdorder->SetupMLSGnfct(sys,n01_0,3);CHKERRQ(ierr);			//computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3
-    ierr = AddElem(n110thirdorder,"g(3)(n11)");CHKERRQ(ierr);
+    ierr = gtwo0->Setup(sys,0);CHKERRQ(ierr);
+    ierr = AddElem(gtwo0,"gtwo 0");CHKERRQ(ierr);
     
-    ierr = n111secorder->SetupMLSGnfct(sys,n01_1,2);CHKERRQ(ierr);                //computes g^(2) = <J_{10} J_{10} J_{01} J_{01}>/<J_{10} J_{01}>^2
-    ierr = AddElem(n111secorder,"g(2)(n11)");CHKERRQ(ierr);
+    ierr = gone1->Setup(sys,1);CHKERRQ(ierr);
+    ierr = AddElem(gone1,"gone 1");CHKERRQ(ierr);
     
-    ierr = n111thirdorder->SetupMLSGnfct(sys,n01_1,3);CHKERRQ(ierr);            //computes g^(2) = <J_{10} J_{10} J_{10} J_{01} J_{01} J_{01}>/<J_{10} J_{01}>^3
-    ierr = AddElem(n111thirdorder,"g(3)(n11)");CHKERRQ(ierr);
+    ierr = gtwo1->Setup(sys,1);CHKERRQ(ierr);
+    ierr = AddElem(gtwo0,"gtwo 1");CHKERRQ(ierr);
     
-    ierr = gone->Setup(sys);
+    ierr = gone->Setup(sys);CHKERRQ(ierr);
     ierr = AddElem(gone,"gone inter");CHKERRQ(ierr);
 
-    ierr = gtwo->Setup(sys);
+    ierr = gtwo->Setup(sys);CHKERRQ(ierr);
     ierr = AddElem(gtwo,"gtwo inter");CHKERRQ(ierr);
     
     ierr = MakeHeaderTEV();CHKERRQ(ierr);
+    
+    PetscFunctionReturn(0);
+}
+
+
+/**
+ *  @brief      Setup function for the inter TLS gone function, which is the square root of the gtwo denominator
+ */
+
+#undef __FUNCT__
+#define __FUNCT__ "Setup"
+
+PetscErrorCode TLSGOne::Setup(TwoTLS* sys,PetscInt type)
+{
+    PetscFunctionBeginUser;
+    PetscErrorCode    ierr;
+    
+    Mat     lower,raise,mult;
+    
+    ierr = sys->MatJ10Left(&lower,type); CHKERRQ(ierr);        //corresponds to J_{10,0} \rho
+    
+    ierr = MatHermitianTranspose(lower,MAT_INITIAL_MATRIX,&raise); CHKERRQ(ierr);
+    
+    ierr = MatMatMult(raise,lower,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult); CHKERRQ(ierr);    //this results in J_{10,0}  \rho
+    
+    ierr = GenerateLeft(sys,mult);CHKERRQ(ierr);        //this creates a vector corresponding to mult^\dagger |tr>
+    
+    isherm = 1;                            //flag that tells psiquasp that the matrix is not hermitian, i.e. the observable not necessarily real valued and that we want real and imaginary value plotted into the ouput file
+    
+    ierr = MatDestroy(&lower);CHKERRQ(ierr);            //these are not needed anymore
+    ierr = MatDestroy(&raise);CHKERRQ(ierr);
+    ierr = MatDestroy(&mult);CHKERRQ(ierr);
+    
+    PetscFunctionReturn(0);
+}
+
+
+/**
+ *  @brief      Setup function for the inter TLS gtwo function numerator
+ */
+
+#undef __FUNCT__
+#define __FUNCT__ "Setup"
+
+PetscErrorCode TLSGTwo::Setup(TwoTLS* sys, PetscInt type)
+{
+    PetscFunctionBeginUser;
+    PetscErrorCode    ierr;
+    
+    Mat     lower,lower2,raise,mult,mult2,mult3;
+    
+    ierr = sys->MatJ10Left(&lower,type); CHKERRQ(ierr);        //corresponds to J_{10,type} \rho
+    ierr = sys->MatJ10Left(&lower2,type); CHKERRQ(ierr);        //corresponds to J_{10,type} \rho
+    
+    ierr = MatHermitianTranspose(lower,MAT_INITIAL_MATRIX,&raise); CHKERRQ(ierr);
+    
+    ierr = MatMatMult(lower2,lower,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult); CHKERRQ(ierr);
+    ierr = MatMatMult(raise,mult,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult2); CHKERRQ(ierr);
+    ierr = MatMatMult(raise,mult2,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult3); CHKERRQ(ierr);
+    
+    ierr = GenerateLeft(sys,mult3);CHKERRQ(ierr);        //this creates a vector corresponding to mult^\dagger |tr>
+    
+    isherm = 1;                            //flag that tells psiquasp that the matrix is not hermitian, i.e. the observable not necessarily real valued and that we want real and imaginary value plotted into the ouput file
+    
+    ierr = MatDestroy(&lower);CHKERRQ(ierr);            //these are not needed anymore
+    ierr = MatDestroy(&lower2);CHKERRQ(ierr);
+    ierr = MatDestroy(&raise);CHKERRQ(ierr);
+    ierr = MatDestroy(&mult);CHKERRQ(ierr);
+    ierr = MatDestroy(&mult2);CHKERRQ(ierr);
+    ierr = MatDestroy(&mult3);CHKERRQ(ierr);
     
     PetscFunctionReturn(0);
 }
@@ -413,9 +481,9 @@ PetscErrorCode InterGTwo::Setup(TwoTLS* sys)
     
     ierr = MatHermitianTranspose(lower,MAT_INITIAL_MATRIX,&raise); CHKERRQ(ierr);
     
-    ierr = MatMatMult(lower2,lower,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult); CHKERRQ(ierr);      //this results in J_{10,0}  \rho
-    ierr = MatMatMult(raise,mult,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult2); CHKERRQ(ierr);       //this results in J_{10,0}  \rho
-    ierr = MatMatMult(raise,mult2,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult3); CHKERRQ(ierr);      //this results in J_{10,0}  \rho
+    ierr = MatMatMult(lower2,lower,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult); CHKERRQ(ierr);
+    ierr = MatMatMult(raise,mult,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult2); CHKERRQ(ierr);
+    ierr = MatMatMult(raise,mult2,MAT_INITIAL_MATRIX,PETSC_DEFAULT,&mult3); CHKERRQ(ierr);
     
     ierr = GenerateLeft(sys,mult3);CHKERRQ(ierr);        //this creates a vector corresponding to mult^\dagger |tr>
     
@@ -430,6 +498,57 @@ PetscErrorCode InterGTwo::Setup(TwoTLS* sys)
     
     PetscFunctionReturn(0);
 }
+
+
+#undef __FUNCT__
+#define __FUNCT__ "MatJ10Left"
+
+/**
+ * @brief    Creates a Matrix that corresponds to the collective lowering operators of TLS type type added, i.e. AA = J_{01,type}
+ *
+ * @param    AA             the Liouvillan matrix
+ * @param    type           the type of tls
+ *
+ */
+
+PetscErrorCode TwoTLS::MatJ10Left(Mat* AA,PetscInt type)
+{
+    PetscFunctionBeginUser;
+    PetscErrorCode    ierr;
+    
+    PetscInt            *d_nnz    = new PetscInt [loc_size] ();
+    PetscInt            *o_nnz    = new PetscInt [loc_size] ();
+    MultiMLSDim         n11 (1,1,type), n10 (1,0,type), n01 (0,1,type), n00 (0,0,type);
+    
+    
+    //create matrix
+    ierr = PQSPCreateMat(AA); CHKERRQ(ierr);
+    
+    
+    //preallocation
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n10_1,n00_1,1.0); CHKERRQ(ierr);        //Jl_{10,0}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n11_1,n01_1,1.0); CHKERRQ(ierr);        //...
+    
+    ierr = MatMPIAIJSetPreallocation(*AA,0,d_nnz,0,o_nnz); CHKERRQ(ierr);                       //parallel
+    ierr = MatSeqAIJSetPreallocation(*AA,0,d_nnz); CHKERRQ(ierr);                               //and sequential
+    
+    
+    //allocation
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n10_1,n00_1,1.0); CHKERRQ(ierr);        //Jl_{10,0}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n11_1,n01_1,1.0); CHKERRQ(ierr);        //...
+    
+    ierr = MatAssemblyBegin(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);                             //Assemble the matrix
+    ierr = MatAssemblyEnd(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);                               //
+    
+    
+    //clean up
+    delete[] d_nnz;
+    delete[] o_nnz;
+    
+    
+    PetscFunctionReturn(0);
+}
+
 
 #undef __FUNCT__
 #define __FUNCT__ "MatJ10Left"
