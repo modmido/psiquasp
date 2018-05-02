@@ -22,7 +22,7 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     PetscErrorCode	ierr;
     
     //parameters
-    PetscInt		ntls0 = 2, dx0 = 1, ntls1 = 3, dx1 = 2, m0=1, dm0=1;
+    PetscInt		ntls0 = 2, dx0 = 2, ntls1 = 3, dx1 = 3, m0=3, dm0=3;
     PetscReal		modeenergy = 2.0;
     PetscReal		domega_tls0 = 0.0;
     PetscReal       domega_tls1 = 0.0;
