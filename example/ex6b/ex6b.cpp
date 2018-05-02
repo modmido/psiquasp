@@ -22,7 +22,7 @@ PetscErrorCode TwoTLS::Setup(Vec* dm, Mat* AA)
     PetscErrorCode	ierr;
     
     //parameters
-    PetscInt		ntls0 = 2, dx0 = 1, ntls1 = 3, dx1 = 2, m0=1, dm0=1;
+    PetscInt		ntls0 = 2, dx0 = 2, ntls1 = 3, dx1 = 3, m0=3, dm0=3;
     PetscReal		modeenergy = 2.0;
     PetscReal		domega_tls0 = 0.0;
     PetscReal       domega_tls1 = 0.0;
@@ -250,9 +250,11 @@ PetscErrorCode ObservablesFile::SetupMyObsFile(TwoTLS * system, std::string name
     Observable  *pdens11_1  = new Observable();
     Observable  *pdens00_1  = new Observable();
     Observable  *ppol10_1   = new Observable();
-    Observable	*pmodeocc	= new Observable();
-    Observable	*pmodepol	= new Observable();
-    
+    Observable	*pmodeocc0	= new Observable();
+    Observable	*pmodepol0	= new Observable();
+    Observable  *pmodeocc1      = new Observable();
+    Observable  *pmodepol1	= new Observable();
+
     
     //dof identifiers
     MultiMLSDim     n11_0 (1,1,0), n00_0 (0,0,0), n10_0 (1,0,0), n01_0 (0,1,0);
@@ -286,12 +288,18 @@ PetscErrorCode ObservablesFile::SetupMyObsFile(TwoTLS * system, std::string name
     ierr = ppol10_1->SetupMlsPolarization(system,n10_1,rotenergy/hbar);CHKERRQ(ierr);    //computes the <J_{10}> expectation value, this is not hermitian, so PsiQuaSP prints real and imaginary part by default
     ierr = AddElem(ppol10_1,"Re<J_10_1>\t\tIm<J_10_1>");CHKERRQ(ierr);
     
-    ierr = pmodeocc->SetupModeOccupation(system,0);CHKERRQ(ierr);		//computes the <b^\dagger b> mode occupation expectation value, there is an internal error check for the real valuedness of expectation values of hermitian operators
-    ierr = AddElem(pmodeocc,"<bdb>\t");CHKERRQ(ierr);
+    ierr = pmodeocc0->SetupModeOccupation(system,0);CHKERRQ(ierr);		//computes the <b^\dagger b> mode occupation expectation value, there is an internal error check for the real valuedness of expectation values of hermitian operators
+    ierr = AddElem(pmodeocc0,"<bdb_0>\t");CHKERRQ(ierr);
     
-    ierr = pmodepol->SetupModePolarization(system,0,-rotenergy/hbar);CHKERRQ(ierr);	//computes <b>
-    ierr = AddElem(pmodepol,"Re<b>\t\tIm<b>");CHKERRQ(ierr);
-    
+    ierr = pmodepol0->SetupModePolarization(system,0,-rotenergy/hbar);CHKERRQ(ierr);	//computes <b>
+    ierr = AddElem(pmodepol0,"Re<b_0>\t\tIm<b_0>");CHKERRQ(ierr);
+
+    ierr = pmodeocc1->SetupModeOccupation(system,1); CHKERRQ(ierr);
+    ierr = AddElem(pmodeocc1,"<bdb_1>\t");CHKERRQ(ierr);
+
+    ierr = pmodepol1->SetupModePolarization(system,0,-rotenergy/hbar);CHKERRQ(ierr);
+    ierr = AddElem(pmodepol1,"Re<b_1>\t\tIm<b_1>");CHKERRQ(ierr);
+
     ierr = MakeHeaderTEV();CHKERRQ(ierr);
     
     PetscFunctionReturn(0);
@@ -526,16 +534,16 @@ PetscErrorCode TwoTLS::MatJ10Left(Mat* AA,PetscInt type)
     
     
     //preallocation
-    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n10_1,n00_1,1.0); CHKERRQ(ierr);        //Jl_{10,0}
-    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n11_1,n01_1,1.0); CHKERRQ(ierr);        //...
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n10,n00,1.0); CHKERRQ(ierr);        //Jl_{10,0}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,0,n11,n01,1.0); CHKERRQ(ierr);        //...
     
     ierr = MatMPIAIJSetPreallocation(*AA,0,d_nnz,0,o_nnz); CHKERRQ(ierr);                       //parallel
     ierr = MatSeqAIJSetPreallocation(*AA,0,d_nnz); CHKERRQ(ierr);                               //and sequential
     
     
     //allocation
-    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n10_1,n00_1,1.0); CHKERRQ(ierr);        //Jl_{10,0}
-    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n11_1,n01_1,1.0); CHKERRQ(ierr);        //...
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n10,n00,1.0); CHKERRQ(ierr);        //Jl_{10,0}
+    ierr = AddMLSSingleArrowConnecting(*AA,d_nnz,o_nnz,1,n11,n01,1.0); CHKERRQ(ierr);        //...
     
     ierr = MatAssemblyBegin(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);                             //Assemble the matrix
     ierr = MatAssemblyEnd(*AA,MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);                               //
